@@ -17,3 +17,5 @@ async function CheckAdminToken(req, res, next) {
                 .json({ message: "Token inválido" });
     }
 }
+
+export default { CheckAdminToken }

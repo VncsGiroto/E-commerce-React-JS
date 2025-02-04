@@ -1,7 +1,7 @@
 import React from "react";
-import AdminPage from "../components/Admin";
-//fodeu
+import AdminLogin from "../components/AdminLogin";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 export default function Admin(){
-    return <AdminPage></AdminPage>
-    
+    return <AdminLogin></AdminLogin>
 }

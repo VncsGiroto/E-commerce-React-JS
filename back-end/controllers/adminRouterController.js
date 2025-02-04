@@ -3,21 +3,9 @@ import bcrypt, { hash } from "bcrypt"
 import 'dotenv/config'
 import jwt from "jsonwebtoken";
 
-async function getAll(req, res) {
-    try {
-        const admins = await Admin.find();
-        res.status(200)
-            .json(admins);
-    } catch (error) {
-        res.status(404)
-            .json({message: "Erro Inesperado"})
-        console.log(error);
-    }
-}
-
 async function create(req, res) {
     try {
-        const { usuario, senha, cargo } = req.body
+        const { usuario, senha} = req.body
         const admin = await Admin.findOne({usuario: usuario});
         if(admin){
             res.status(404)
@@ -30,9 +18,8 @@ async function create(req, res) {
         const novoAdmin = new Admin({
             usuario,
             senha: hash,
-            cargo
         })
-        //await novoAdmin.save()
+        await novoAdmin.save()
         res.status(200)
             .json(novoAdmin);
     } catch (error) {
@@ -48,7 +35,6 @@ async function getMe(req,res){
         if(!admin){
             res.status(404)
                 .json({message: "Admin Nao Encontrado"})
-            console.log(error);
             return
         }
 
@@ -94,4 +80,5 @@ async function login(req,res){
     }
 }
 
-export default {getAll, create, login}
+
+export default {create, login, getMe}
