@@ -64,6 +64,7 @@ async function login(req,res){
         if(!IsPassword){
             res.status(404)
                 .json({message: "Senha Incorreta"})
+            return
         }
 
         const token = jwt.sign(admin.id, process.env.JWT_ADMIN_SECRET);
@@ -73,9 +74,10 @@ async function login(req,res){
                 message: 'Usuário Logado',
                 token
             });
+        return
     } catch (error) {
         res.status(404)
-            json({message: "Erro Inesperado"})
+            .json({message: "Erro Inesperado"})
         console.log(error);
     }
 }

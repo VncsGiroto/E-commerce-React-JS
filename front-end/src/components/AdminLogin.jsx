@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import AdminLogin from '../functions/AdminLogin';
+import AdminLogin from '../functions/AdminLogin.js';
 
 const Login = ({ onLoginSuccess }) => {
   const [email, setEmail] = useState('');
@@ -24,8 +24,8 @@ const Login = ({ onLoginSuccess }) => {
       <h2>Login</h2>
       <form onSubmit={handleLogin}>
         <input
-          type="email"
-          placeholder="Email"
+          type="text"
+          placeholder="user"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -40,8 +40,6 @@ const Login = ({ onLoginSuccess }) => {
         <button type="submit">Entrar</button>
         {error && <p className="error">{error}</p>}
       </form>
-      <p><a href="/forgot-password">Esqueceu a senha?</a></p>
-      <p><a href="/register">Criar conta</a></p>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 //db
 import connectDataBase from "./db/connection.js";
@@ -15,6 +16,7 @@ const PORT = 4000;
 
 //settings
 app.use(cors());
+app.use(cookieParser());
 app.use(express.json({limit: '8mb'}));
 
 //db
