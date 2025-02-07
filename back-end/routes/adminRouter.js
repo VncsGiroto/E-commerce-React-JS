@@ -7,6 +7,6 @@ const adminRouter = Router();
 
     adminRouter.post('/criar', checkTokens.CheckAdminToken ,adminRouterController.create);
     adminRouter.post('/login', adminRouterController.login);
-    adminRouter.get('/getMe',  checkTokens.CheckAdminToken ,adminRouterController.getMe);
+    adminRouter.get('/getme',  checkTokens.CheckAdminToken ,adminRouterController.getMe);
 
 export default adminRouter;

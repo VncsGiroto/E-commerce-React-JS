@@ -89,6 +89,7 @@ export default function Items() {
         setItems(data);
       } catch (err) {
         setError("Ocorreu um erro ao carregar os itens.");
+        return <Container>{error}</Container>;
       } finally {
         setLoading(false);
       }
@@ -100,9 +101,6 @@ export default function Items() {
       return <Container>Carregando itens...</Container>;
     }
 
-    if (error) {
-      return <Container>{error}</Container>;
-    }
     return (
       <Container>
         <Grid>

@@ -17,7 +17,6 @@ async function CheckAdminToken(req, res, next) {
     } catch (error) {
         res.status(403)
             .json({ message: "Token inválido" });
-        console.log(error)
         return
     }
 }

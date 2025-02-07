@@ -39,7 +39,7 @@ async function getMe(req,res){
         }
 
         res.status(200)
-            .json(admin);
+            .json(admin.usuario);
     } catch (error) {
         res.status(404)
             .json({message: "Erro Inesperado"})
@@ -70,9 +70,14 @@ async function login(req,res){
         const token = jwt.sign(admin.id, process.env.JWT_ADMIN_SECRET);
 
         res.status(200)
+            .cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.JWT_ADMIN_SECRET === 'production', // Ativa secure apenas em produção (HTTPS)
+                sameSite: 'Strict', // Proteção CSRF
+                maxAge: 3600000 // 1 hora
+            })
             .json({
                 message: 'Usuário Logado',
-                token
             });
         return
     } catch (error) {
@@ -82,5 +87,15 @@ async function login(req,res){
     }
 }
 
+async function logout(req, res) {
+    try {
+        res.status(200).clearCookie('token').json({ message: 'Logout realizado com sucesso' });
+    } catch (error) {
+        res.status(404)
+            .json({message: "Erro Inesperado"})
+        console.log(error);
+    }
+}
 
-export default {create, login, getMe}
+
+export default {create, login, getMe, logout}
