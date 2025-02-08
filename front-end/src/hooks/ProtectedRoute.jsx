@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import CheckAdminToken from '../functions/CheckAdminToken';
+import CheckAdminToken from '../functions/admin/CheckAdminToken';
 
 const ProtectedRoute = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(null);

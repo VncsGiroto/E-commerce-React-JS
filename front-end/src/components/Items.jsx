@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import GetItems from "../functions/GetItems.js";
+import GetItems from "../functions/produtos/GetItems.js";
 
 // Estilos
 const Container = styled.div`

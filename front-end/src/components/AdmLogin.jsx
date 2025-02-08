@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import GetAdminToken from '../functions/GetAdminToken.js';
-import CheckAdminToken from '../functions/CheckAdminToken.js';
+import GetAdminToken from '../functions/admin/GetAdminToken.js';
+import CheckAdminToken from '../functions/admin/CheckAdminToken.js';
 
 const AdmLogin = () => {
   const [email, setEmail] = useState('');
