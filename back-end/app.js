@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import path from "path"
 
 //db
 import connectDataBase from "./db/connection.js";
@@ -12,6 +13,7 @@ import adminRouter from "./routes/adminRouter.js";
 
 //server
 const app = express();
+const __dirname = path.resolve();
 const PORT = 4000;
 
 //settings
@@ -20,7 +22,9 @@ app.use(cors({
     credentials: true
 }));
 app.use(cookieParser());
-app.use(express.json({limit: '8mb'}));
+app.use(express.json({limit: '10mb'}));
+app.use('/static', express.static(path.join(__dirname, 'static')));
+
 
 //db
 await connectDataBase();

@@ -1,4 +1,4 @@
-import React, { useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import LogoutAdmin from "../functions/admin/LogoutAdmin";
 import { useNavigate } from 'react-router-dom';
@@ -75,8 +75,7 @@ const ProductCard = styled.div`
     img {
         width: 100%;         // Largura da imagem 100% do tamanho do card
         height: 100%;        // Altura da imagem 100% do espaço disponível
-        object-fit: cover;   // A imagem será redimensionada para cobrir o espaço sem distorcer
-        max-height: 200px;   // Limitar a altura da imagem, impedindo que ela ultrapasse os limites
+        object-fit: contain; // Ajuste da imagem sem esticar
         border-radius: 10px; // Garantir que as bordas da imagem também fiquem arredondadas
     }
 
@@ -126,18 +125,18 @@ const AdmDashboard = () => {
         fetchProducts();
     }, []);
 
-    const handleLogout = async ()=>{
+    const handleLogout = async () => {
         try {
-            const logout = await LogoutAdmin()
-            if(logout){
-                navigate('/admin/', {replace: true});
+            const logout = await LogoutAdmin();
+            if (logout) {
+                navigate('/admin/', { replace: true });
             } else {
                 console.error("Erro ao realizar logout!");
             }
         } catch (error) {
             console.error("Falha ao se desconectar:", error);
         }
-    }
+    };
 
     const handleEdit = (product) => {
         setEditingProduct(product);
@@ -153,7 +152,7 @@ const AdmDashboard = () => {
     const handleDelete = async (id) => {
         try {
             await DeleteItems(id);
-            window.alert("Produto Deletado")
+            window.alert("Produto Deletado");
             setProducts(products.filter(product => product._id !== id));
         } catch (error) {
             console.error("Erro ao deletar produto", error);
@@ -163,17 +162,31 @@ const AdmDashboard = () => {
     const handleChange = (e) => {
         setNewProduct({ ...newProduct, [e.target.name]: e.target.value });
     };
-    
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setNewProduct({
+                    ...newProduct,
+                    imagem: reader.result.split(',')[1], // Removendo o prefixo "data:image/*;base64,"
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSaveProduct = async (e) => {
         e.preventDefault();
-        
+
         try {
             if (editingProduct) {
                 // Atualizar produto existente
                 const updatedProduct = await UpdateItem(editingProduct._id, newProduct);
                 if (updatedProduct.status === 200) {
-                    setProducts(products.map(p => 
-                        p._id === editingProduct._id 
+                    setProducts(products.map(p =>
+                        p._id === editingProduct._id
                             ? { ...p, ...newProduct }  // Mantém a estrutura e atualiza os valores
                             : p
                     ));
@@ -186,62 +199,62 @@ const AdmDashboard = () => {
                     setProducts([...products, addedProduct.data]);
                 }
             }
-    
+
             // Resetar formulário
             setNewProduct({ nome: '', imagem: '', descricao: '', categoria: '', preco: '' });
-    
+
         } catch (error) {
             console.error("Erro ao salvar produto", error);
         }
     };
 
-  return (
-    <Container>
-      <Sidebar>
-        <h2>Admin Panel</h2>
-        <MenuItem>Produtos</MenuItem>
-        <MenuItem onClick={handleLogout}>Sair</MenuItem>
-      </Sidebar>
-      <Content>
-            <Header>Dashboard</Header>
-            <p>Bem-vindo ao painel de administração!</p>
-            <h3>Lista de Produtos</h3>
-            <form onSubmit={handleSaveProduct}>
-                <input type="text" name="nome" placeholder="Nome" value={newProduct.nome} onChange={handleChange} required />
-                <input type="text" name="imagem" placeholder="URL da Imagem" value={newProduct.imagem} onChange={handleChange} required />
-                <input type="text" name="descricao" placeholder="Descrição" value={newProduct.descricao} onChange={handleChange} required />
-                <input type="text" name="categoria" placeholder="Categoria" value={newProduct.categoria} onChange={handleChange} required />
-                <input type="number" name="preco" placeholder="Preço" value={newProduct.preco} onChange={handleChange} required />
-                <button type="submit">
-                    {editingProduct ? "Atualizar Produto" : "Adicionar Produto"}
-                </button>
-                {editingProduct && (
-                    <button type="button" onClick={() => {
-                        setEditingProduct(null);
-                        setNewProduct({ nome: '', imagem: '', descricao: '', categoria: '', preco: '' }); // Resetando o formulário
-                    }}>
-                        Cancelar Edição
+    return (
+        <Container>
+            <Sidebar>
+                <h2>Admin Panel</h2>
+                <MenuItem>Produtos</MenuItem>
+                <MenuItem onClick={handleLogout}>Sair</MenuItem>
+            </Sidebar>
+            <Content>
+                <Header>Dashboard</Header>
+                <p>Bem-vindo ao painel de administração!</p>
+                <h3>Lista de Produtos</h3>
+                <form onSubmit={handleSaveProduct}>
+                    <input type="text" name="nome" placeholder="Nome" value={newProduct.nome} onChange={handleChange} required />
+                    <input type="file" name="imagem" onChange={handleImageChange} required />
+                    <input type="text" name="descricao" placeholder="Descrição" value={newProduct.descricao} onChange={handleChange} required />
+                    <input type="text" name="categoria" placeholder="Categoria" value={newProduct.categoria} onChange={handleChange} required />
+                    <input type="number" name="preco" placeholder="Preço" value={newProduct.preco} onChange={handleChange} required />
+                    <button type="submit">
+                        {editingProduct ? "Atualizar Produto" : "Adicionar Produto"}
                     </button>
-                )}
-            </form>
-            <ProductList>
-                {products.map(product => (
-                    <ProductCard key={product._id}>
-                        <div className="img-wrapper">
-                            <img src={product.imagem} alt={product.nome} />
-                        </div>
-                        <h4>{product.nome}</h4>
-                        <p>{product.descricao}</p>
-                        <p>Categoria: {product.categoria}</p>
-                        <p>Preço: R$ {product.preco}</p>
-                        <button onClick={() => handleDelete(product._id)}>Deletar</button>
-                        <button onClick={() => handleEdit(product)}>Editar</button>
-                    </ProductCard>
-                ))}
-            </ProductList>
-        </Content>
-    </Container>
-  );
+                    {editingProduct && (
+                        <button type="button" onClick={() => {
+                            setEditingProduct(null);
+                            setNewProduct({ nome: '', imagem: '', descricao: '', categoria: '', preco: '' }); // Resetando o formulário
+                        }}>
+                            Cancelar Edição
+                        </button>
+                    )}
+                </form>
+                <ProductList>
+                    {products.map(product => (
+                        <ProductCard key={product._id}>
+                            <div className="img-wrapper">
+                                <img src={product.imagem} alt={product.nome} />
+                            </div>
+                            <h4>{product.nome}</h4>
+                            <p>{product.descricao}</p>
+                            <p>Categoria: {product.categoria}</p>
+                            <p>Preço: R$ {product.preco}</p>
+                            <button onClick={() => handleDelete(product._id)}>Deletar</button>
+                            <button onClick={() => handleEdit(product)}>Editar</button>
+                        </ProductCard>
+                    ))}
+                </ProductList>
+            </Content>
+        </Container>
+    );
 };
 
 export default AdmDashboard;

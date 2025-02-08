@@ -32,8 +32,10 @@ const Item = styled.div`
 const Image = styled.img`
     width: 100%;
     height: 200px;
-    object-fit: cover;
+    object-fit: contain; /* Ajuste da imagem sem esticar */
+    background-color: #f0f0f0; /* Fundo cinza claro para imagens com transparência */
 `;
+
 
 const Info = styled.div`
     padding: 15px;
@@ -110,7 +112,7 @@ export default function Items() {
               <Info>
                 <Title>{item.nome}</Title>
                 <Description>{item.descricao}</Description>
-                <Price>{item.preco}</Price>
+                <Price>R$ {parseFloat(item.preco).toFixed(2)}</Price> 
                 <Button>Comprar</Button>
               </Info>
             </Item>
