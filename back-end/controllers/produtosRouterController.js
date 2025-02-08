@@ -34,7 +34,7 @@ async function getCategoria(req, res){
 
 async function create(req,res){
     try {
-        const { nome, imagem, descricao, categoria, preco, estoque, especificacoes } = req.body;
+        const { nome, imagem, descricao, categoria, preco } = req.body;
         const produto = await Produto.findOne({nome: nome});
         if(produto){
             res.status(404)
@@ -47,8 +47,6 @@ async function create(req,res){
             descricao,
             categoria,
             preco,
-            estoque,
-            especificacoes
         });
         await novoProduto.save()
         res.status(200)
@@ -60,10 +58,10 @@ async function create(req,res){
     }
 }
 
-async function deleteNome(req, res){
+async function deleteId(req, res){
     try {
-        const nome = req.params.nome
-        const produto = await Produto.findOneAndDelete({nome: nome});
+        const id = req.params.id
+        const produto = await Produto.findOneAndDelete({_id: id});
         res.status(200)
             .json({message: "Produto Deletado", produto});
     } catch (error) {
@@ -75,17 +73,15 @@ async function deleteNome(req, res){
 
 async function update(req,res){
     try {
-        const { nome, imagem, descricao, categoria, preco, estoque, especificacoes } = req.body;
+        const { _id, nome, imagem, descricao, categoria, preco } = req.body;
         const update = {
             nome,
             imagem,
             descricao,
             categoria,
             preco,
-            estoque,
-            especificacoes
         };
-        const produto = await Produto.findOneAndUpdate({nome: nome, update})
+        const produto = await Produto.findOneAndUpdate({_id: _id, update})
         if(produto){
             res.status(200)
                 .json({message: "Produto Autalizado", produto});
@@ -102,4 +98,4 @@ async function update(req,res){
     }
 }
 
-export default {getAll, create, getCategoria, deleteNome, update};
+export default {getAll, create, getCategoria, deleteId, update};

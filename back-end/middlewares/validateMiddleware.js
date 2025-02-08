@@ -17,8 +17,6 @@ async function ProdutoValidate(req, res, next){
         descricao: vine.string().minLength(1), 
         categoria: vine.string().minLength(1),
         preco: vine.number().positive(),
-        estoque: vine.number().positive(),
-        especificacoes: vine.string().minLength(1)
     })
     try {
         await vine.validate({schema, data})
