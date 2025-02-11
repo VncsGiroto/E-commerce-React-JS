@@ -1,8 +1,8 @@
 import React from "react";
 import styled from "styled-components";
+import { Link } from "react-router-dom";
 
-const Modelo = styled.div
-`
+const Modelo = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -20,8 +20,7 @@ const Modelo = styled.div
     
 `
 
-const Logo = styled.img
-`
+const Logo = styled.img`
     height: 40px;
 
     @media (max-width: 480px) {
@@ -30,8 +29,7 @@ const Logo = styled.img
     
 `
 
-const Nav = styled.nav
-`
+const Nav = styled.nav`
     display: flex;
     gap: 20px;
 
@@ -40,8 +38,7 @@ const Nav = styled.nav
     }
 `
 
-const Ul = styled.ul
-`
+const Ul = styled.ul`
     display: flex;
     gap: 20px;
     list-style: none;
@@ -49,8 +46,7 @@ const Ul = styled.ul
     padding: 0;
 `
 
-const Lista = styled.li
-`
+const Lista = styled.li`
     text-decoration: none;
     color: #333;
     font-size: 16px;
@@ -62,8 +58,7 @@ const Lista = styled.li
     }
 `
 
-const Actions = styled.div
-`
+const Actions = styled.div`
     display: flex;
     align-items: center;
     gap: 15px;
@@ -73,8 +68,7 @@ const Actions = styled.div
     }
 `
 
-const ActionButtons = styled.a
-`
+const ActionButtons = styled(Link)`
     text-decoration: none;
     color: #333;
     font-size: 18px;
@@ -86,22 +80,21 @@ const ActionButtons = styled.a
     }
 `
 
-export default function navbar(){
-    const menuItems = ["Home", "Lançamentos", "Masculino", "Feminino", "Ofertas"];
+export default function Navbar() {
+    const userToken = localStorage.getItem("userToken");
 
-    return <Modelo>
-        <Logo src="/src/assets/logo.png" alt="logo"/>
-        <Nav>
-            <Ul>
-                {menuItems.map((item, index) => (
-                    <Lista key={index}>{item}</Lista>
-                ))}
-            </Ul>
-        </Nav>
-        <Actions>
-            <ActionButtons>&#128269;</ActionButtons>
-            <ActionButtons>&#128722;</ActionButtons>
-            <ActionButtons>Entrar</ActionButtons>
-        </Actions>
-    </Modelo>
+    return (
+        <Modelo>
+            <Logo src="/src/assets/logo.png" alt="logo"/>
+            <Nav>
+                <Ul>
+                    {/* Add any other menu items here */}
+                </Ul>
+            </Nav>
+            <Actions>
+                <ActionButtons to="/cart">&#128722;</ActionButtons>
+                {!userToken && <ActionButtons to="/register">Registrar</ActionButtons>}
+            </Actions>
+        </Modelo>
+    );
 }

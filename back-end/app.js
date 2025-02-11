@@ -18,7 +18,7 @@ const PORT = 4000;
 
 //settings
 app.use(cors({
-    origin: 'http://localhost:5174',
+    origin: 'http://localhost:5173',
     credentials: true
 }));
 app.use(cookieParser());

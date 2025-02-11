@@ -36,7 +36,6 @@ const Image = styled.img`
     background-color: #f0f0f0; /* Fundo cinza claro para imagens com transparência */
 `;
 
-
 const Info = styled.div`
     padding: 15px;
 `;
@@ -77,48 +76,62 @@ const Button = styled.button`
     }
 `;
 
+const AddToCartButton = styled(Button)`
+    background-color: #007bff;
+    &:hover {
+      background-color: #0056b3;
+    }
+`;
+
 // Componente funcional
 export default function Items() {
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const loadItems = async () => {
-      try {
-        const data = await GetItems();
-        setItems(data);
-      } catch (err) {
-        setError("Ocorreu um erro ao carregar os itens.");
-        return <Container>{error}</Container>;
-      } finally {
-        setLoading(false);
-      }
-    };
-      loadItems();
+    useEffect(() => {
+        const loadItems = async () => {
+            try {
+                const data = await GetItems();
+                setItems(data);
+            } catch (err) {
+                setError("Ocorreu um erro ao carregar os itens.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadItems();
     }, []);
 
     if (loading) {
-      return <Container>Carregando itens...</Container>;
+        return <Container>Carregando itens...</Container>;
     }
 
+    if (error) {
+        return <Container>{error}</Container>;
+    }
+
+    const handleAddToCart = (item) => {
+        const cartItems = JSON.parse(localStorage.getItem("cart")) || [];
+        cartItems.push(item);
+        localStorage.setItem("cart", JSON.stringify(cartItems));
+    };
+
     return (
-      <Container>
-        <Grid>
-          {items.map((item) => (
-            <Item key={item._id}>
-              <Image src={item.imagem} alt={item.nome} />
-              <Info>
-                <Title>{item.nome}</Title>
-                <Description>{item.descricao}</Description>
-                <Price>R$ {parseFloat(item.preco).toFixed(2)}</Price> 
-                <Button>Comprar</Button>
-              </Info>
-            </Item>
-          ))}
-        </Grid>
-      </Container>
+        <Container>
+            <Grid>
+                {items.map((item) => (
+                    <Item key={item._id}>
+                        <Image src={item.imagem} alt={item.nome} />
+                        <Info>
+                            <Title>{item.nome}</Title>
+                            <Description>{item.descricao}</Description>
+                            <Price>R$ {parseFloat(item.preco).toFixed(2)}</Price>
+                            <AddToCartButton onClick={() => handleAddToCart(item)}>Adicionar ao Carrinho</AddToCartButton>
+                        </Info>
+                    </Item>
+                ))}
+            </Grid>
+        </Container>
     );
- 
 }

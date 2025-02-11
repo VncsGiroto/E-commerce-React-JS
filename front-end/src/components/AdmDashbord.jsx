@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useEffect, useState } from "react";
+=======
+import React, { useEffect, useState} from "react";
+>>>>>>> origin/main
 import styled from "styled-components";
 import LogoutAdmin from "../functions/admin/LogoutAdmin";
 import { useNavigate } from 'react-router-dom';
@@ -75,7 +79,12 @@ const ProductCard = styled.div`
     img {
         width: 100%;         // Largura da imagem 100% do tamanho do card
         height: 100%;        // Altura da imagem 100% do espaço disponível
+<<<<<<< HEAD
         object-fit: contain; // Ajuste da imagem sem esticar
+=======
+        object-fit: cover;   // A imagem será redimensionada para cobrir o espaço sem distorcer
+        max-height: 200px;   // Limitar a altura da imagem, impedindo que ela ultrapasse os limites
+>>>>>>> origin/main
         border-radius: 10px; // Garantir que as bordas da imagem também fiquem arredondadas
     }
 
@@ -125,18 +134,30 @@ const AdmDashboard = () => {
         fetchProducts();
     }, []);
 
+<<<<<<< HEAD
     const handleLogout = async () => {
         try {
             const logout = await LogoutAdmin();
             if (logout) {
                 navigate('/admin/', { replace: true });
+=======
+    const handleLogout = async ()=>{
+        try {
+            const logout = await LogoutAdmin()
+            if(logout){
+                navigate('/admin/', {replace: true});
+>>>>>>> origin/main
             } else {
                 console.error("Erro ao realizar logout!");
             }
         } catch (error) {
             console.error("Falha ao se desconectar:", error);
         }
+<<<<<<< HEAD
     };
+=======
+    }
+>>>>>>> origin/main
 
     const handleEdit = (product) => {
         setEditingProduct(product);
@@ -152,7 +173,11 @@ const AdmDashboard = () => {
     const handleDelete = async (id) => {
         try {
             await DeleteItems(id);
+<<<<<<< HEAD
             window.alert("Produto Deletado");
+=======
+            window.alert("Produto Deletado")
+>>>>>>> origin/main
             setProducts(products.filter(product => product._id !== id));
         } catch (error) {
             console.error("Erro ao deletar produto", error);
@@ -162,6 +187,7 @@ const AdmDashboard = () => {
     const handleChange = (e) => {
         setNewProduct({ ...newProduct, [e.target.name]: e.target.value });
     };
+<<<<<<< HEAD
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -180,13 +206,24 @@ const AdmDashboard = () => {
     const handleSaveProduct = async (e) => {
         e.preventDefault();
 
+=======
+    
+    const handleSaveProduct = async (e) => {
+        e.preventDefault();
+        
+>>>>>>> origin/main
         try {
             if (editingProduct) {
                 // Atualizar produto existente
                 const updatedProduct = await UpdateItem(editingProduct._id, newProduct);
                 if (updatedProduct.status === 200) {
+<<<<<<< HEAD
                     setProducts(products.map(p =>
                         p._id === editingProduct._id
+=======
+                    setProducts(products.map(p => 
+                        p._id === editingProduct._id 
+>>>>>>> origin/main
                             ? { ...p, ...newProduct }  // Mantém a estrutura e atualiza os valores
                             : p
                     ));
@@ -199,15 +236,23 @@ const AdmDashboard = () => {
                     setProducts([...products, addedProduct.data]);
                 }
             }
+<<<<<<< HEAD
 
             // Resetar formulário
             setNewProduct({ nome: '', imagem: '', descricao: '', categoria: '', preco: '' });
 
+=======
+    
+            // Resetar formulário
+            setNewProduct({ nome: '', imagem: '', descricao: '', categoria: '', preco: '' });
+    
+>>>>>>> origin/main
         } catch (error) {
             console.error("Erro ao salvar produto", error);
         }
     };
 
+<<<<<<< HEAD
     return (
         <Container>
             <Sidebar>
@@ -255,6 +300,55 @@ const AdmDashboard = () => {
             </Content>
         </Container>
     );
+=======
+  return (
+    <Container>
+      <Sidebar>
+        <h2>Admin Panel</h2>
+        <MenuItem>Produtos</MenuItem>
+        <MenuItem onClick={handleLogout}>Sair</MenuItem>
+      </Sidebar>
+      <Content>
+            <Header>Dashboard</Header>
+            <p>Bem-vindo ao painel de administração!</p>
+            <h3>Lista de Produtos</h3>
+            <form onSubmit={handleSaveProduct}>
+                <input type="text" name="nome" placeholder="Nome" value={newProduct.nome} onChange={handleChange} required />
+                <input type="text" name="imagem" placeholder="URL da Imagem" value={newProduct.imagem} onChange={handleChange} required />
+                <input type="text" name="descricao" placeholder="Descrição" value={newProduct.descricao} onChange={handleChange} required />
+                <input type="text" name="categoria" placeholder="Categoria" value={newProduct.categoria} onChange={handleChange} required />
+                <input type="number" name="preco" placeholder="Preço" value={newProduct.preco} onChange={handleChange} required />
+                <button type="submit">
+                    {editingProduct ? "Atualizar Produto" : "Adicionar Produto"}
+                </button>
+                {editingProduct && (
+                    <button type="button" onClick={() => {
+                        setEditingProduct(null);
+                        setNewProduct({ nome: '', imagem: '', descricao: '', categoria: '', preco: '' }); // Resetando o formulário
+                    }}>
+                        Cancelar Edição
+                    </button>
+                )}
+            </form>
+            <ProductList>
+                {products.map(product => (
+                    <ProductCard key={product._id}>
+                        <div className="img-wrapper">
+                            <img src={product.imagem} alt={product.nome} />
+                        </div>
+                        <h4>{product.nome}</h4>
+                        <p>{product.descricao}</p>
+                        <p>Categoria: {product.categoria}</p>
+                        <p>Preço: R$ {product.preco}</p>
+                        <button onClick={() => handleDelete(product._id)}>Deletar</button>
+                        <button onClick={() => handleEdit(product)}>Editar</button>
+                    </ProductCard>
+                ))}
+            </ProductList>
+        </Content>
+    </Container>
+  );
+>>>>>>> origin/main
 };
 
 export default AdmDashboard;

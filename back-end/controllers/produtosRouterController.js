@@ -52,9 +52,13 @@ async function getCategoria(req, res){
 
 async function create(req,res){
     try {
+<<<<<<< HEAD
         const { nome, descricao, categoria, preco } = req.body;
         const imagem = req.uuid;
 
+=======
+        const { nome, imagem, descricao, categoria, preco } = req.body;
+>>>>>>> origin/main
         const produto = await Produto.findOne({nome: nome});
         if(produto){
             res.status(404)
@@ -81,6 +85,7 @@ async function create(req,res){
 async function deleteId(req, res){
     try {
         const id = req.params.id
+<<<<<<< HEAD
         const produto = await Produto.findOne({ _id: id });
 
         if (!produto) {
@@ -96,6 +101,9 @@ async function deleteId(req, res){
         }
 
         await Produto.deleteOne({ _id: id });
+=======
+        const produto = await Produto.findOneAndDelete({_id: id});
+>>>>>>> origin/main
         res.status(200)
             .json({message: "Produto Deletado", produto});
     } catch (error) {
@@ -107,6 +115,7 @@ async function deleteId(req, res){
 
 async function update(req, res) {
     try {
+<<<<<<< HEAD
         const { _id, nome, descricao, categoria, preco } = req.body;
         let novaImagem = req.uuid;
 
@@ -129,6 +138,9 @@ async function update(req, res) {
             }
         }
 
+=======
+        const { _id, nome, imagem, descricao, categoria, preco } = req.body;
+>>>>>>> origin/main
         const update = {
             nome,
             imagem: novaImagem || produtoAtual.imagem, // Certifique-se de usar novaImagem ou manter a antiga
@@ -136,11 +148,24 @@ async function update(req, res) {
             categoria,
             preco,
         };
+<<<<<<< HEAD
 
         const produtoAtualizado = await Produto.findOneAndUpdate({ _id: _id }, update, { new: true });
 
         res.status(200).json({ message: "Produto Atualizado", produto: produtoAtualizado });
 
+=======
+        const produto = await Produto.findOneAndUpdate({_id: _id, update})
+        if(produto){
+            res.status(200)
+                .json({message: "Produto Autalizado", produto});
+        }
+        else{
+            res.status(404)
+                .json({message: "Produto Não Encontrado"})
+        }
+        
+>>>>>>> origin/main
     } catch (error) {
         res.status(500).json({ message: "Erro Inesperado" });
         console.log(error);

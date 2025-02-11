@@ -5,4 +5,6 @@ import PageRoutes from "./routes/PageRoutes.jsx";
 const contentor = document.getElementById('root');
 const orign = createRoot(contentor);
 
-orign.render(<PageRoutes/>)
+orign.render(
+    <PageRoutes/>
+)
