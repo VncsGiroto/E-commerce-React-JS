@@ -112,9 +112,7 @@ export default function Items() {
     }
 
     const handleAddToCart = (item) => {
-        const cartItems = JSON.parse(localStorage.getItem("cart")) || [];
-        cartItems.push(item);
-        localStorage.setItem("cart", JSON.stringify(cartItems));
+        console.log("Adicionando ao carrinho:", item);
     };
 
     return (
@@ -126,7 +124,9 @@ export default function Items() {
                         <Info>
                             <Title>{item.nome}</Title>
                             <Description>{item.descricao}</Description>
-                            <Price>R$ {parseFloat(item.preco).toFixed(2)}</Price>
+                            <Price>
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(item.preco))}
+                            </Price>
                             <AddToCartButton onClick={() => handleAddToCart(item)}>Adicionar ao Carrinho</AddToCartButton>
                         </Info>
                     </Item>

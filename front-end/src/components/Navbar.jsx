@@ -1,6 +1,8 @@
-import React from "react";
+import React,{useEffect, useState}from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
+import Cookies from "js-cookie";
+import CheckUserToken from "../functions/user/CheckUserToken.js";
 
 const Modelo = styled.div`
     display: flex;
@@ -81,16 +83,26 @@ const ActionButtons = styled(Link)`
 `
 
 export default function Navbar() {
-    const userToken = localStorage.getItem("userToken");
+    const [userToken, setUserToken] = useState(null);
+
+    useEffect(() => {
+        const token = Cookies.get('userToken');
+        if (token) {
+            const validateToken = async () => {
+                const response = await CheckUserToken();
+                if (response) {
+                    setUserToken(token);
+                } else {
+                    setUserToken(null);
+                }
+            };
+            validateToken();
+        }
+    }, []);
 
     return (
         <Modelo>
             <Logo src="/src/assets/logo.png" alt="logo"/>
-            <Nav>
-                <Ul>
-                    {/* Add any other menu items here */}
-                </Ul>
-            </Nav>
             <Actions>
                 <ActionButtons to="/cart">&#128722;</ActionButtons>
                 {!userToken && <ActionButtons to="/register">Registrar</ActionButtons>}
