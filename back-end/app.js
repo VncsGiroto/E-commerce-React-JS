@@ -29,6 +29,7 @@ app.use('/static', express.static(path.join(__dirname, 'static')));
 //db
 await connectDataBase();
 
+
 //rotes
 app.use("/user/", userRouter);
 app.use("/", produtosRouter);

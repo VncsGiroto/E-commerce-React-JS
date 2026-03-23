@@ -7,7 +7,7 @@ export default async function connectDataBase(){
         console.log("Banco De Dados Conectado")
         return
     } catch (error) {
-        console.log(error)
-        return
+        console.log(error, "\nErro ao se conectar com a db")
+        process.exit(1)
     }
 }
