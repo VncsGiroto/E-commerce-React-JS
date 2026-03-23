@@ -10,6 +10,7 @@ import connectDataBase from "./db/connection.js";
 import userRouter from "./routes/userRouter.js";
 import produtosRouter from "./routes/produtosRouter.js";
 import adminRouter from "./routes/adminRouter.js";
+import cartRouter from "./routes/cartRouter.js"
 
 //server
 const app = express();
@@ -32,8 +33,9 @@ await connectDataBase();
 
 //rotes
 app.use("/user/", userRouter);
-app.use("/", produtosRouter);
+app.use("/produto/", produtosRouter);
 app.use("/admin/", adminRouter);
+app.use("/cart/", cartRouter);
 
 //open server
 app.listen(PORT, ()=>{

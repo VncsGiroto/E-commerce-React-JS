@@ -61,4 +61,18 @@ async function UserValidate(req, res, next) {
     }
 }
 
-export default {ProdutoUpdateValidate, ProdutoCreateValidate, UserValidate}
+async function CartValidate(req, res, next) {
+    const data = req.body;
+    const schema = vine.object({
+        produto_id: vine.string().minLength(1),
+        quantidade: vine.number().positive(),
+    });
+    try {
+        await vine.validate({ schema, data });
+        next();
+    } catch (error) {
+        res.status(403).json(error.messages);
+    }
+}
+
+export default {ProdutoUpdateValidate, ProdutoCreateValidate, UserValidate, CartValidate}

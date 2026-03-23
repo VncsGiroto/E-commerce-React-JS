@@ -105,7 +105,6 @@ export default function Navbar() {
             <Logo src="/src/assets/logo.png" alt="logo"/>
             <Actions>
                 <ActionButtons to="/cart">&#128722;</ActionButtons>
-                {!userToken && <ActionButtons to="/register">Registrar</ActionButtons>}
             </Actions>
         </Modelo>
     );

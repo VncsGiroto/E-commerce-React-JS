@@ -2,7 +2,7 @@ import { api } from "../Api";
 
 const AddItem = async (produto) => {
     try {
-        const response = await api.post("/criar", {
+        const response = await api.post("/produto/criar", {
             nome: produto.nome,
             imagem: produto.imagem,
             descricao: produto.descricao,

@@ -132,6 +132,7 @@ async function update(req, res) {
         const update = {
             nome,
             imagem: novaImagem || produtoAtual.imagem, 
+            descricao,
             categoria,
             preco,
         };

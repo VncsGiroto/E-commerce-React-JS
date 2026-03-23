@@ -271,6 +271,7 @@ const AdmDashbord = () => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [notification, setNotification] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
+    const [imageChanged, setImageChanged] = useState(false);
     const [newProduct, setNewProduct] = useState({
         nome: '',
         imagem: '',
@@ -321,6 +322,7 @@ const AdmDashbord = () => {
     const handleEdit = (product) => {
         setEditingProduct(product);
         setImagePreview(product.imagem);
+        setImageChanged(false);
         setNewProduct({
             nome: product.nome,
             descricao: product.descricao,
@@ -352,6 +354,7 @@ const AdmDashbord = () => {
             reader.onloadend = () => {
                 const base64 = reader.result;
                 setImagePreview(base64); // Preview local
+                setImageChanged(true);
                 setNewProduct({
                     ...newProduct,
                     imagem: base64.split(',')[1], // Envia só o base64
@@ -367,10 +370,16 @@ const AdmDashbord = () => {
         try {
             if (editingProduct) {
                 // Atualizar produto existente
-                const updatedProduct = await UpdateItem(editingProduct._id, newProduct);
+                const dataToSend = { ...newProduct };
+                // Se a imagem não foi alterada na edição, não envia a imagem
+                if (!imageChanged) {
+                    delete dataToSend.imagem;
+                }
+                const updatedProduct = await UpdateItem(editingProduct._id, dataToSend);
                 if (updatedProduct.status === 200) {
                     showNotification(updatedProduct?.message || "Produto atualizado com sucesso!", 'success');
                     setEditingProduct(null);
+                    setImageChanged(false);
                     await refetchProducts();
                 }
             } else {
@@ -385,6 +394,7 @@ const AdmDashbord = () => {
             // Resetar formulário
             setNewProduct({ nome: '', imagem: '', descricao: '', categoria: '', preco: '' });
             setImagePreview(null);
+            setImageChanged(false);
 
         } catch (error) {
             console.error("Erro ao salvar produto", error);
@@ -443,6 +453,7 @@ const AdmDashbord = () => {
                                 setEditingProduct(null);
                                 setNewProduct({ nome: '', imagem: '', descricao: '', categoria: '', preco: '' });
                                 setImagePreview(null);
+                                setImageChanged(false);
                             }}>
                                 Cancelar Edição
                             </CancelButton>
