@@ -2,6 +2,7 @@ import { api } from "../Api";
 
 const UpdateItem = async (_id, produto) => {
     try {
+        console.log(produto.imagem)
         const response = await api.put("/update", {
             _id,
             nome: produto.nome,

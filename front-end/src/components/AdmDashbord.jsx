@@ -142,7 +142,6 @@ const AdmDashbord = () => {
         setEditingProduct(product);
         setNewProduct({
             nome: product.nome,
-            imagem: product.imagem,
             descricao: product.descricao,
             categoria: product.categoria,
             preco: product.preco
@@ -170,7 +169,7 @@ const AdmDashbord = () => {
             reader.onloadend = () => {
                 setNewProduct({
                     ...newProduct,
-                    imagem: reader.result.split(',')[1], // Removendo o prefixo "data:image/*;base64,"
+                    imagem: reader.result.split(',')[1], 
                 });
             };
             reader.readAsDataURL(file);
@@ -221,7 +220,7 @@ const AdmDashbord = () => {
                 <h3>Lista de Produtos</h3>
                 <form onSubmit={handleSaveProduct}>
                     <input type="text" name="nome" placeholder="Nome" value={newProduct.nome} onChange={handleChange} required />
-                    <input type="file" name="imagem" onChange={handleImageChange} required />
+                    <input type="file" name="imagem" onChange={handleImageChange} />
                     <input type="text" name="descricao" placeholder="Descrição" value={newProduct.descricao} onChange={handleChange} required />
                     <input type="text" name="categoria" placeholder="Categoria" value={newProduct.categoria} onChange={handleChange} required />
                     <input type="number" name="preco" placeholder="Preço" value={newProduct.preco} onChange={handleChange} required />

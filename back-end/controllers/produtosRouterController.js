@@ -17,8 +17,8 @@ async function getAll(req, res){
         const produtosComImagem = produtos.map(produto => {
             const imagemUrl = `${req.protocol}://${req.get('host')}/static/images/${produto.imagem}`;
             return { 
-                ...produto.toObject(), // Converte o documento do MongoDB em um objeto
-                imagem: imagemUrl // Substitui a imagem pelo link completo
+                ...produto.toObject(), 
+                imagem: imagemUrl 
             };
         });
 
@@ -90,7 +90,7 @@ async function deleteId(req, res){
         const imagePath = path.resolve(__dirname, '..', 'static', 'images', produto.imagem);
 
         if (existsSync(imagePath)) {
-            unlinkSync(imagePath); // Deletando a imagem
+            unlinkSync(imagePath); 
         } else {
             console.warn(`Imagem ${produto.imagem} não encontrada, não foi possível deletar.`);
         }
@@ -123,7 +123,7 @@ async function update(req, res) {
         if (novaImagem && produtoAtual.imagem !== novaImagem) {
             const antigaImagemPath = join(__dirname, '..', 'static', 'images', produtoAtual.imagem);
             if (existsSync(antigaImagemPath)) {
-                unlinkSync(antigaImagemPath); // Deletando a imagem antiga
+                unlinkSync(antigaImagemPath); 
             } else {
                 console.warn(`Imagem antiga ${produtoAtual.imagem} não encontrada, não foi possível deletar.`);
             }
@@ -131,8 +131,7 @@ async function update(req, res) {
 
         const update = {
             nome,
-            imagem: novaImagem || produtoAtual.imagem, // Certifique-se de usar novaImagem ou manter a antiga
-            descricao,
+            imagem: novaImagem || produtoAtual.imagem, 
             categoria,
             preco,
         };

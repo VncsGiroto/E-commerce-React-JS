@@ -9,7 +9,7 @@ const messages = {
 }
 vine.messagesProvider = new SimpleMessagesProvider(messages)
 
-async function ProdutoValidate(req, res, next){
+async function ProdutoCreateValidate(req, res, next){
 
     const data = req.body;
     const schema = vine.object({
@@ -28,6 +28,23 @@ async function ProdutoValidate(req, res, next){
 
 }
 
+async function ProdutoUpdateValidate(req, res, next){
+
+    const data = req.body;
+    const schema = vine.object({
+        nome: vine.string().minLength(1),
+        descricao: vine.string().minLength(1), 
+        categoria: vine.string().minLength(1),
+        preco: vine.number().positive(),
+    })
+    try {
+        await vine.validate({schema, data})
+        next();
+    } catch (error) {
+        res.status(403).json(error.messages)
+    }
+
+}
 
 async function UserValidate(req, res, next) {
     const data = req.body;
@@ -44,4 +61,4 @@ async function UserValidate(req, res, next) {
     }
 }
 
-export default {ProdutoValidate, UserValidate}
+export default {ProdutoUpdateValidate, ProdutoCreateValidate, UserValidate}
