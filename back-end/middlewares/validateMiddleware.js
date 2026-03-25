@@ -46,7 +46,7 @@ async function ProdutoUpdateValidate(req, res, next){
 
 }
 
-async function UserValidate(req, res, next) {
+async function UserCreateValidate(req, res, next) {
     const data = req.body;
     const schema = vine.object({
         nome: vine.string().minLength(1),
@@ -61,11 +61,11 @@ async function UserValidate(req, res, next) {
     }
 }
 
-async function CartValidate(req, res, next) {
-    const data = req.body;
+async function UserLoginValidate(req, res, next) {
+        const data = req.body;
     const schema = vine.object({
-        produto_id: vine.string().minLength(1),
-        quantidade: vine.number().positive(),
+        email: vine.string().email().minLength(1),
+        senha: vine.string().minLength(6),
     });
     try {
         await vine.validate({ schema, data });
@@ -75,4 +75,20 @@ async function CartValidate(req, res, next) {
     }
 }
 
-export default {ProdutoUpdateValidate, ProdutoCreateValidate, UserValidate, CartValidate}
+async function CartValidate(req, res, next) {
+    const data = req.body.items;
+    const schema = vine.array(
+        vine.object({
+            produtoId: vine.string().minLength(1),
+            quantidade: vine.number().positive(),
+        })
+    );
+    try {
+        await vine.validate({ schema, data });
+        next();
+    } catch (error) {
+        res.status(403).json(error.messages);
+    }
+}
+
+export default {ProdutoUpdateValidate, ProdutoCreateValidate, UserCreateValidate, UserLoginValidate, CartValidate}

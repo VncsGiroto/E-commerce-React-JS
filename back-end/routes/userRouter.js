@@ -5,9 +5,9 @@ import validateMiddleware from "../middlewares/validateMiddleware.js";
 
 const userRouter = Router();
 
-    userRouter.get('/', userRouterController.getAll);
-    userRouter.post('/create', validateMiddleware.UserValidate, userRouterController.create);
-    userRouter.post('/login', userRouterController.login);
+    userRouter.get('/', checkTokens.CheckAdminToken,userRouterController.getAll);
+    userRouter.post('/create', validateMiddleware.UserCreateValidate, userRouterController.create);
+    userRouter.post('/login', validateMiddleware.UserLoginValidate, userRouterController.login);
     userRouter.get('/me', checkTokens.CheckUserToken, userRouterController.getMe);
     userRouter.get('/logout', checkTokens.CheckUserToken, userRouterController.logout);
 
