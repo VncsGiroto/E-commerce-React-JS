@@ -11,6 +11,7 @@ import userRouter from "./routes/userRouter.js";
 import produtosRouter from "./routes/produtosRouter.js";
 import adminRouter from "./routes/adminRouter.js";
 import cartRouter from "./routes/cartRouter.js"
+import categoriaRouter from "./routes/categoriaRouter.js";
 
 //server
 const app = express();
@@ -36,6 +37,7 @@ app.use("/user/", userRouter);
 app.use("/produto/", produtosRouter);
 app.use("/admin/", adminRouter);
 app.use("/cart/", cartRouter);
+app.use("/categoria/", categoriaRouter);
 
 //open server
 app.listen(PORT, ()=>{

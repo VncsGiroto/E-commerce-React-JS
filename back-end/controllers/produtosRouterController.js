@@ -1,6 +1,7 @@
 import { messages } from "@vinejs/vine/defaults";
 import path from 'path';
 import Produto from "../models/Produto.js";
+import Categoria from "../models/Categoria.js";
 import imageSavingMiddleware from "../middlewares/base64ToImageMiddleware.js";
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -12,7 +13,7 @@ const __dirname = dirname(__filename);
 
 async function getAll(req, res){
     try {
-        const produtos = await Produto.find();
+        const produtos = await Produto.find().populate('categoriaId');
 
         const produtosComImagem = produtos.map(produto => {
             const imagemUrl = `${req.protocol}://${req.get('host')}/static/images/${produto.imagem}`;
@@ -33,9 +34,16 @@ async function getAll(req, res){
 
 async function getCategoria(req, res){
     try {
-        const categoria = req.params.categoria
-        const produtos = await Produto.find({categoria: categoria});
-        if(produtos){
+        const categoriaId = req.params.categoria;
+        
+        // Validar se é um ObjectId válido
+        if (!categoriaId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({message: "ID de categoria inválido"});
+        }
+        
+        const produtos = await Produto.find({categoriaId: categoriaId}).populate('categoriaId');
+        
+        if(produtos && produtos.length > 0){
             res.status(200)
                 .json({message: produtos});
         }
@@ -52,25 +60,39 @@ async function getCategoria(req, res){
 
 async function create(req,res){
     try {
-        const { nome, descricao, categoria, preco } = req.body;
+        const { nome, descricao, categoriaId, preco } = req.body;
         const imagem = req.uuid;
+
+        // Validar campos obrigatórios
+        if (!nome || !descricao || !categoriaId || !preco) {
+            return res.status(400).json({message: "Campos obrigatórios: nome, descricao, categoriaId, preco"});
+        }
+
+        // Verificar se categoria existe
+        const categoria = await Categoria.findById(categoriaId);
+        if (!categoria) {
+            return res.status(404).json({message: "Categoria não encontrada"});
+        }
 
         const produto = await Produto.findOne({nome: nome});
         if(produto){
-            res.status(404)
+            return res.status(400)
                 .json({message: "Produto Já Criado"})
-            return
         }
+        
         const novoProduto = new Produto({
             nome,
             imagem,
             descricao,
-            categoria,
+            categoriaId,
             preco,
         });
-        await novoProduto.save()
-        res.status(200)
-            .json(novoProduto);
+        
+        await novoProduto.save();
+        const produtoPopulado = await novoProduto.populate('categoriaId');
+        
+        res.status(201)
+            .json(produtoPopulado);
     } catch (error) {
         res.status(500)
             .json({message: "Erro Inesperado"})
@@ -107,7 +129,7 @@ async function deleteId(req, res){
 
 async function update(req, res) {
     try {
-        const { _id, nome, descricao, categoria, preco } = req.body;
+        const { _id, nome, descricao, categoriaId, preco } = req.body;
         let novaImagem = req.uuid;
 
         if (!novaImagem && req.body.imagem) {
@@ -117,6 +139,14 @@ async function update(req, res) {
         const produtoAtual = await Produto.findById(_id);
         if (!produtoAtual) {
             return res.status(404).json({ message: "Produto Não Encontrado" });
+        }
+
+        // Verificar se categoria existe (caso seja alterada)
+        if (categoriaId && categoriaId !== produtoAtual.categoriaId.toString()) {
+            const categoria = await Categoria.findById(categoriaId);
+            if (!categoria) {
+                return res.status(404).json({ message: "Categoria não encontrada" });
+            }
         }
 
         // Verificar se a imagem foi atualizada
@@ -130,14 +160,14 @@ async function update(req, res) {
         }
 
         const update = {
-            nome,
+            ...(nome && { nome }),
             imagem: novaImagem || produtoAtual.imagem, 
-            descricao,
-            categoria,
-            preco,
+            ...(descricao && { descricao }),
+            ...(categoriaId && { categoriaId }),
+            ...(preco && { preco }),
         };
 
-        const produtoAtualizado = await Produto.findOneAndUpdate({ _id: _id }, update, { new: true });
+        const produtoAtualizado = await Produto.findOneAndUpdate({ _id: _id }, update, { new: true }).populate('categoriaId');
 
         res.status(200).json({ message: "Produto Atualizado", produto: produtoAtualizado });
 

@@ -435,6 +435,119 @@ POST /admin/logout
 
 ---
 
+## 🏷️ Rotas de Categorias
+
+**Base URL**: `/categoria/`
+
+### 1. Listar Todas as Categorias
+```
+GET /categoria/
+```
+- **Descrição**: Retorna uma lista de todas as categorias
+- **Autenticação**: ❌ Não requerida
+- **Status de Sucesso**: 200 OK
+- **Resposta**:
+```json
+[
+  {
+    "_id": "string (ObjectId)",
+    "nome": "string",
+    "descricao": "string"
+  }
+]
+```
+
+### 2. Obter Categoria por ID
+```
+GET /categoria/:id
+```
+- **Descrição**: Retorna os dados de uma categoria específica
+- **Autenticação**: ❌ Não requerida
+- **Parâmetros**:
+  - `id` (string): ID da categoria
+- **Status de Sucesso**: 200 OK
+- **Resposta**:
+```json
+{
+  "_id": "string (ObjectId)",
+  "nome": "string",
+  "descricao": "string"
+}
+```
+- **Erro**: 404 Not Found (categoria não encontrada)
+
+### 3. Criar Nova Categoria
+```
+POST /categoria/criar
+```
+- **Descrição**: Cria uma nova categoria (apenas admin)
+- **Autenticação**: ✅ Requerida (CheckAdminToken)
+- **Body Esperado**:
+```json
+{
+  "nome": "string (único)",
+  "descricao": "string (opcional)"
+}
+```
+- **Resposta de Sucesso** (201 Created):
+```json
+{
+  "message": "Categoria criada com sucesso",
+  "categoria": {
+    "_id": "string (ObjectId)",
+    "nome": "string",
+    "descricao": "string"
+  }
+}
+```
+- **Erro**: 400 Bad Request (nome obrigatório ou já existe), 401 Unauthorized (não é admin)
+
+### 4. Atualizar Categoria
+```
+PUT /categoria/atualizar/:id
+```
+- **Descrição**: Atualiza os dados de uma categoria existente (apenas admin)
+- **Autenticação**: ✅ Requerida (CheckAdminToken)
+- **Parâmetros**:
+  - `id` (string): ID da categoria
+- **Body Esperado**:
+```json
+{
+  "nome": "string (opcional)",
+  "descricao": "string (opcional)"
+}
+```
+- **Resposta de Sucesso** (200 OK):
+```json
+{
+  "message": "Categoria atualizada com sucesso",
+  "categoria": {
+    "_id": "string (ObjectId)",
+    "nome": "string",
+    "descricao": "string"
+  }
+}
+```
+- **Erro**: 404 Not Found, 400 Bad Request (nome duplicado), 401 Unauthorized (não é admin)
+
+### 5. Deletar Categoria
+```
+DELETE /categoria/deletar/:id
+```
+- **Descrição**: Remove uma categoria do sistema (apenas admin)
+- **Autenticação**: ✅ Requerida (CheckAdminToken)
+- **Parâmetros**:
+  - `id` (string): ID da categoria
+- **Resposta de Sucesso** (200 OK):
+```json
+{
+  "message": "Categoria deletada com sucesso"
+}
+```
+- **Erro**: 404 Not Found (categoria não encontrada), 401 Unauthorized (não é admin)
+
+---
+
 ## 📊 Resumo de Endpoints
 
 | Método | Rota | Autenticação | Descrição |
@@ -449,6 +562,11 @@ POST /admin/logout
 | POST | `/produto/criar` | ✅ Admin | Criar produto |
 | PUT | `/produto/update` | ✅ Admin | Atualizar produto |
 | DELETE | `/produto/delete/:id` | ✅ Admin | Deletar produto |
+| GET | `/categoria/` | ❌ | Listar categorias |
+| GET | `/categoria/:id` | ❌ | Obter categoria |
+| POST | `/categoria/criar` | ✅ Admin | Criar categoria |
+| PUT | `/categoria/atualizar/:id` | ✅ Admin | Atualizar categoria |
+| DELETE | `/categoria/deletar/:id` | ✅ Admin | Deletar categoria |
 | POST | `/cart/criar` | ✅ User | Criar carrinho com múltiplos itens |
 | GET | `/cart/:userId` | ✅ User | Obter carrinho do usuário |
 | PUT | `/cart/atualizar/:cartId` | ✅ User | Atualizar carrinho com novos preços |
@@ -510,7 +628,7 @@ curl -X POST http://localhost:4000/produto/criar \
   -d '{
     "nome": "Notebook",
     "descricao": "Notebook de alta performance",
-    "categoria": "eletrônicos",
+    "categoriaId": "507f1f77bcf86cd799439011",
     "preco": 3500.00,
     "imagem": "base64_string_aqui"
   }'
@@ -524,11 +642,11 @@ curl -X POST http://localhost:4000/cart/criar \
   -d '{
     "items": [
       {
-        "produto_id": "507f1f77bcf86cd799439011",
+        "produtoId": "507f1f77bcf86cd799439011",
         "quantidade": 2
       },
       {
-        "produto_id": "507f1f77bcf86cd799439012",
+        "produtoId": "507f1f77bcf86cd799439012",
         "quantidade": 1
       }
     ]
@@ -549,7 +667,7 @@ curl -X PUT http://localhost:4000/cart/atualizar/seu_cart_id \
   -d '{
     "items": [
       {
-        "produto_id": "507f1f77bcf86cd799439011",
+        "produtoId": "507f1f77bcf86cd799439011",
         "quantidade": 3
       }
     ]
@@ -572,6 +690,65 @@ curl -X POST http://localhost:4000/cart/recalcular/seu_cart_id \
 ```bash
 curl -X DELETE http://localhost:4000/cart/seu_cart_id \
   -H "Cookie: token=seu_token_usuario_aqui"
+```
+
+### Listar Todas as Categorias
+```bash
+curl -X GET http://localhost:4000/categoria/
+```
+
+### Obter Categoria por ID
+```bash
+curl -X GET http://localhost:4000/categoria/507f1f77bcf86cd799439011
+```
+
+### Criar Nova Categoria (Admin)
+```bash
+curl -X POST http://localhost:4000/categoria/criar \
+  -H "Content-Type: application/json" \
+  -H "Cookie: token=seu_token_admin_aqui" \
+  -d '{
+    "nome": "Eletrônicos",
+    "descricao": "Produtos eletrônicos em geral"
+  }'
+```
+
+### Atualizar Categoria (Admin)
+```bash
+curl -X PUT http://localhost:4000/categoria/atualizar/507f1f77bcf86cd799439011 \
+  -H "Content-Type: application/json" \
+  -H "Cookie: token=seu_token_admin_aqui" \
+  -d '{
+    "nome": "Eletrônicos e Informática",
+    "descricao": "Produtos eletrônicos e de informática",
+    "ativa": true
+  }'
+```
+
+### Deletar Categoria (Admin)
+```bash
+curl -X DELETE http://localhost:4000/categoria/deletar/507f1f77bcf86cd799439011 \
+  -H "Cookie: token=seu_token_admin_aqui"
+```
+
+### Criar Novo Produto com Categoria (Admin)
+```bash
+curl -X POST http://localhost:4000/produto/criar \
+  -H "Content-Type: application/json" \
+  -H "Cookie: token=seu_token_admin_aqui" \
+  -d '{
+    "nome": "Notebook Intel i7",
+    "descricao": "Notebook de alta performance com Intel i7",
+    "categoriaId": "507f1f77bcf86cd799439011",
+    "preco": 3500.00,
+    "imagem": "base64_string_aqui"
+  }'
+```
+
+### Listar Produtos de uma Categoria (por categoriaId)
+```bash
+curl -X GET http://localhost:4000/produto/507f1f77bcf86cd799439011 \
+  -H "Content-Type: application/json"
 ```
 
 ### Login Admin
@@ -657,4 +834,4 @@ Duas camadas de validação garantem segurança e confiabilidade:
 
 ---
 
-**Última atualização**: Março 2026
+**Última atualização**: Março 2026 (Inclusão de rotas de Categorias)
