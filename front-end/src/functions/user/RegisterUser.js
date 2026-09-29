@@ -1,6 +1,6 @@
 import { api } from "../Api"
 
-export default async function GetUseroken(nome, email, senha){
+export default async function RegisterUser(nome, email, senha){
     try {
         const response = await api.post("/user/create", {
             nome,
@@ -9,6 +9,6 @@ export default async function GetUseroken(nome, email, senha){
         });
         return response
     } catch (error) {
-        return null
+        return error.response ?? null
     }
 }

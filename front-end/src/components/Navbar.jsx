@@ -1,8 +1,9 @@
-import React,{useEffect, useState}from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 import Cookies from "js-cookie";
 import CheckUserToken from "../functions/user/CheckUserToken.js";
+import logo from "../assets/logo.png";
 
 const Modelo = styled.div`
     display: flex;
@@ -31,35 +32,6 @@ const Logo = styled.img`
     
 `
 
-const Nav = styled.nav`
-    display: flex;
-    gap: 20px;
-
-    @media (max-width: 768px) {
-       display: none;
-    }
-`
-
-const Ul = styled.ul`
-    display: flex;
-    gap: 20px;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-`
-
-const Lista = styled.li`
-    text-decoration: none;
-    color: #333;
-    font-size: 16px;
-    font-weight: 500;
-    transition: color 0.3s;
-
-    &:hover{
-        color: #a8a8a8;
-    }
-`
-
 const Actions = styled.div`
     display: flex;
     align-items: center;
@@ -82,18 +54,24 @@ const ActionButtons = styled(Link)`
     }
 `
 
+const UserName = styled.span`
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+`
+
 export default function Navbar() {
-    const [userToken, setUserToken] = useState(null);
+    const [userName, setUserName] = useState(null);
 
     useEffect(() => {
         const token = Cookies.get('userToken');
         if (token) {
             const validateToken = async () => {
                 const response = await CheckUserToken();
-                if (response) {
-                    setUserToken(token);
+                if (response?.status === 200) {
+                    setUserName(response?.data?.nome ?? response?.data?.user?.nome ?? null);
                 } else {
-                    setUserToken(null);
+                    setUserName(null);
                 }
             };
             validateToken();
@@ -102,9 +80,10 @@ export default function Navbar() {
 
     return (
         <Modelo>
-            <Logo src="/src/assets/logo.png" alt="logo"/>
+            <Logo src={logo} alt="logo"/>
             <Actions>
-                <ActionButtons to="/cart">&#128722;</ActionButtons>
+                {userName && <UserName>Olá, {userName}</UserName>}
+                <ActionButtons to="/login">Entrar</ActionButtons>
             </Actions>
         </Modelo>
     );

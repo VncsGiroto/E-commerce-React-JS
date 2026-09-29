@@ -8,6 +8,6 @@ export default async function GetUserToken(email, senha){
         });
         return response
     } catch (error) {
-        return null
+        return error.response ?? null
     }
 }

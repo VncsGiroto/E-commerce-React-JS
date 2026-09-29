@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import RegisterUser from '../functions/user/RegisterUser';
 
@@ -130,6 +130,15 @@ const UserRegister = () => {
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+    const navigateTimeout = useRef(null);
+
+    useEffect(() => {
+        return () => {
+            if (navigateTimeout.current) {
+                clearTimeout(navigateTimeout.current);
+            }
+        };
+    }, []);
 
     const validateForm = () => {
         if (!nome.trim()) {
@@ -149,7 +158,7 @@ const UserRegister = () => {
             return false;
         }
         if (senha !== confirmSenha) {
-            setError('As senhas não coincdem');
+            setError('As senhas não coincidem');
             return false;
         }
         return true;
@@ -169,9 +178,9 @@ const UserRegister = () => {
         try {
             const response = await RegisterUser(nome, email, senha);
             
-            if (response && response.status === 200) {
+            if (response && (response.status === 200 || response.status === 201)) {
                 setSuccess('Conta criada com sucesso! Redirecionando...');
-                setTimeout(() => {
+                navigateTimeout.current = setTimeout(() => {
                     navigate('/login', { replace: true });
                 }, 2000);
             } else {
@@ -252,7 +261,7 @@ const UserRegister = () => {
                 </form>
 
                 <LoginLink>
-                    Já tem conta? <a onClick={() => navigate('/login')}>Faça login</a>
+                    Já tem conta? <Link to="/login">Faça login</Link>
                 </LoginLink>
             </FormWrapper>
         </Container>

@@ -3,8 +3,8 @@ import mongoose from "mongoose";
 const { Schema } = mongoose;
 
 const adminSchema = new Schema({
-    usuario: {type: String, required: true, trim: true},
-    senha: {type: String, required: true, trim: true},
+    usuario: {type: String, required: true, trim: true, unique: true},
+    senha: {type: String, required: true},
 })
 
 const Admin = mongoose.model('Admin', adminSchema)

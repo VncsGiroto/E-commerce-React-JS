@@ -1,7 +1,14 @@
 
 import jwt from "jsonwebtoken";
 
-async function CheckAdminToken(req, res, next) {
+function extractId(decoded) {
+    if (decoded && typeof decoded === 'object' && decoded.id !== undefined) {
+        return decoded.id;
+    }
+    return decoded;
+}
+
+function CheckAdminToken(req, res, next) {
     try {
         const token = req.cookies.token
 
@@ -11,17 +18,20 @@ async function CheckAdminToken(req, res, next) {
             return
         }
 
-        const decoded = await jwt.verify(token, process.env.JWT_ADMIN_SECRET);
-        req.id = decoded;
+        const decoded = jwt.verify(token, process.env.JWT_ADMIN_SECRET);
+        req.id = extractId(decoded);
         next();
     } catch (error) {
+        if (error && error.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: "Login Expirado" });
+        }
         res.status(403)
             .json({ message: "Token inválido" });
         return
     }
 }
 
-async function CheckUserToken(req, res, next) {
+function CheckUserToken(req, res, next) {
     try {
         const token = req.cookies.Usertoken;
 
@@ -30,10 +40,13 @@ async function CheckUserToken(req, res, next) {
             return;
         }
 
-        const decoded = await jwt.verify(token, process.env.JWT_USER_SECRET);
-        req.id = decoded.id; // Extrair o campo id
+        const decoded = jwt.verify(token, process.env.JWT_USER_SECRET);
+        req.id = extractId(decoded); // Extrair o campo id
         next();
     } catch (error) {
+        if (error && error.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: "Login Expirado" });
+        }
         res.status(403).json({ message: "Token inválido" });
         return;
     }

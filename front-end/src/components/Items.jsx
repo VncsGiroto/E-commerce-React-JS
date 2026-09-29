@@ -81,6 +81,10 @@ const AddToCartButton = styled(Button)`
     &:hover {
       background-color: #0056b3;
     }
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
 `;
 
 // Componente funcional
@@ -93,7 +97,7 @@ export default function Items() {
         const loadItems = async () => {
             try {
                 const data = await GetItems();
-                setItems(data);
+                setItems(Array.isArray(data) ? data : []);
             } catch (err) {
                 setError("Ocorreu um erro ao carregar os itens.");
             } finally {
@@ -111,26 +115,31 @@ export default function Items() {
         return <Container>{error}</Container>;
     }
 
-    const handleAddToCart = (item) => {
-        console.log("Adicionando ao carrinho:", item);
-    };
+    if (items.length === 0) {
+        return <Container>Nenhum item disponível no momento.</Container>;
+    }
 
     return (
         <Container>
             <Grid>
-                {items.map((item) => (
+                {items.map((item) => {
+                    const precoNum = parseFloat(item.preco);
+                    return (
                     <Item key={item._id}>
                         <Image src={item.imagem} alt={item.nome} />
                         <Info>
                             <Title>{item.nome}</Title>
                             <Description>{item.descricao}</Description>
                             <Price>
-                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(item.preco))}
+                                {Number.isNaN(precoNum)
+                                    ? item.preco
+                                    : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(precoNum)}
                             </Price>
-                            <AddToCartButton onClick={() => handleAddToCart(item)}>Adicionar ao Carrinho</AddToCartButton>
+                            <AddToCartButton disabled title="Carrinho indisponível no momento">Adicionar ao Carrinho</AddToCartButton>
                         </Info>
                     </Item>
-                ))}
+                    );
+                })}
             </Grid>
         </Container>
     );

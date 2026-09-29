@@ -2,9 +2,9 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import PageRoutes from "./routes/PageRoutes.jsx";
 
-const contentor = document.getElementById('root');
-const orign = createRoot(contentor);
+const container = document.getElementById('root');
+const root = createRoot(container);
 
-orign.render(
+root.render(
     <PageRoutes/>
 )

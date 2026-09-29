@@ -5,6 +5,6 @@ export default async function LogoutAdmin(){
         const response = await api.post("/admin/logout");
         return response
     } catch (error) {
-        return null
+        return error.response ?? null
     }
 }

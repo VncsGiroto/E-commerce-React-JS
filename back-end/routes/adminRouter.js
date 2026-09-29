@@ -5,7 +5,17 @@ import checkTokens from "../middlewares/checkTokens.js";
 
 const adminRouter = Router();
 
-    adminRouter.post('/criar', checkTokens.CheckAdminToken ,adminRouterController.create);
+    // POST /criar é público (bootstrap do primeiro admin), com validação básica de body
+    adminRouter.post('/criar', (req, res, next) => {
+        const { usuario, senha } = req.body || {};
+        if (!usuario || typeof usuario !== 'string' || !usuario.trim()) {
+            return res.status(400).json({ message: "Campo 'usuario' é obrigatório" });
+        }
+        if (!senha || typeof senha !== 'string' || senha.length < 6) {
+            return res.status(400).json({ message: "Campo 'senha' é obrigatório e deve ter no mínimo 6 caracteres" });
+        }
+        next();
+    }, adminRouterController.create);
     adminRouter.post('/login', adminRouterController.login);
     adminRouter.get('/getme',  checkTokens.CheckAdminToken ,adminRouterController.getMe);
     adminRouter.post('/logout', checkTokens.CheckAdminToken, adminRouterController.logout);

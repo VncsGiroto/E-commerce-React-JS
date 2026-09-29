@@ -5,6 +5,6 @@ export default async function DeleteItems(id){
         const response = await api.delete(`/produto/delete/${id}`);
         return response.data;     
     } catch (error) {
-        return response
+        return error.response ?? null
     }
 }

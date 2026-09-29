@@ -7,7 +7,7 @@ const produtoSchema = new Schema({
     imagem: {type: String, required: true, trim: true},
     descricao: {type: String, required: true, trim: true},
     categoriaId: {type: Schema.Types.ObjectId, ref: 'Categoria', required: true},
-    preco: {type: Number, required: true},
+    preco: {type: Number, required: true, min: 0},
 }, { timestamps: true })
 
 const Produto = mongoose.model('Produto', produtoSchema)

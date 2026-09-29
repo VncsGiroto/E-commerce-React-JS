@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import GetUserToken from '../functions/user/GetUserToken';
 import CheckUserToken from '../functions/user/CheckUserToken';
@@ -122,6 +122,7 @@ const UserLogin = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [checking, setChecking] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -133,6 +134,8 @@ const UserLogin = () => {
                 }
             } catch (error) {
                 return null;
+            } finally {
+                setChecking(false);
             }
         };
         checkAuth();
@@ -141,22 +144,37 @@ const UserLogin = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
+
+        if (!email.trim() || !password.trim()) {
+            setError('Preencha email e senha.');
+            return;
+        }
+
         setIsLoading(true);
 
         try {
-            const response = await GetUserToken(email, password);
+            const response = await GetUserToken(email.trim(), password);
             if (response && response.status === 200) {
                 navigate('/', { replace: true });
             } else {
                 setError(response?.data?.message || 'Email ou senha incorretos');
             }
         } catch (error) {
-            console.error('Erro ao fazer login:', error);
             setError('Erro ao fazer login. Tente novamente.');
         } finally {
             setIsLoading(false);
         }
     };
+
+    if (checking) {
+        return (
+            <Container>
+                <FormWrapper>
+                    <p>Verificando sessão...</p>
+                </FormWrapper>
+            </Container>
+        );
+    }
 
     return (
         <Container>
@@ -198,7 +216,7 @@ const UserLogin = () => {
                 </form>
 
                 <LinkContainer>
-                    Não tem conta? <a onClick={() => navigate('/register')}>Registre-se aqui</a>
+                    Não tem conta? <Link to="/register">Registre-se aqui</Link>
                 </LinkContainer>
             </FormWrapper>
         </Container>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import AdminToken from '../functions/AdminToken';
+import CheckAdminToken from '../functions/admin/CheckAdminToken';
 
 const useAdminAuth = () => {
     const [admin, setAdmin] = useState(null);
@@ -8,8 +8,12 @@ const useAdminAuth = () => {
     useEffect(() => {
         const checkAdmin = async () => {
             try {
-                const response = await AdminToken(); // Verifica sessão
-                console.log(response);
+                const response = await CheckAdminToken(); // Verifica sessão
+                if (response) {
+                    setAdmin(response);
+                } else {
+                    setAdmin(null);
+                }
             } catch (error) {
                 setAdmin(null); // Se falhar, não está autenticado
             } finally {

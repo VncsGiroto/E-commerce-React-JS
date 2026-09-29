@@ -2,12 +2,33 @@ import Cart from "../models/Cart.js";
 import Produto from "../models/Produto.js";
 import User from "../models/User.js";
 
+const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
+
+function isValidObjectId(id) {
+    return typeof id === 'string' && OBJECT_ID_REGEX.test(id);
+}
+
+function checkOwner(cart, reqId, res) {
+    if (cart.userId.toString() !== String(reqId)) {
+        res.status(403).json({ message: "Acesso negado: este carrinho pertence a outro usuário" });
+        return false;
+    }
+    return true;
+}
+
 /**
  * Validação de integridade: Verifica se todos os produtos existem no banco
  * Retorna array com produtos validados ou null em caso de erro
  */
 async function validateProducts(items) {
-    const productIds = items.map(item => item.produtoId);
+    const rawIds = items.map(item => item.produtoId);
+    // Deduplicar IDs
+    const productIds = [...new Set(rawIds.map(id => String(id)))];
+    for (const id of productIds) {
+        if (!isValidObjectId(id)) {
+            return { valid: false, invalidId: id };
+        }
+    }
     const products = await Produto.find({ _id: { $in: productIds } });
 
     if (products.length !== productIds.length) {
@@ -35,8 +56,8 @@ async function calculateCartTotal(items, products) {
 
         if (!produto) continue;
 
-        const quantidade = parseInt(item.quantidade) || 0;
-        if (quantidade < 1) {
+        const quantidade = Number(item.quantidade);
+        if (!Number.isInteger(quantidade) || quantidade < 1 || quantidade > 999) {
             return {
                 success: false,
                 error: `Quantidade inválida para produto ${produto.nome}`
@@ -88,6 +109,12 @@ async function create(req, res) {
         // Validação de integridade: todos os produtos existem?
         const validation = await validateProducts(items);
         if (!validation.valid) {
+            if (validation.invalidId) {
+                return res.status(400).json({
+                    message: "ID de produto inválido",
+                    invalidId: validation.invalidId
+                });
+            }
             return res.status(404).json({
                 message: "Um ou mais produtos não foram encontrados",
                 missingProductIds: validation.missingIds
@@ -100,14 +127,12 @@ async function create(req, res) {
             return res.status(400).json({ message: calculation.error });
         }
 
-        // Criar novo carrinho
-        const novoCart = new Cart({
-            userId: req.id,
-            items: calculation.items,
-            valorTotal: calculation.valorTotal
-        });
-
-        await novoCart.save();
+        // Criar novo carrinho (operação atômica em documento único)
+        const novoCart = await Cart.findOneAndUpdate(
+            { userId: req.id },
+            { userId: req.id, items: calculation.items, valorTotal: calculation.valorTotal },
+            { new: true, upsert: true, runValidators: true }
+        );
 
         res.status(201).json({
             message: "Carrinho criado com sucesso",
@@ -129,6 +154,12 @@ async function create(req, res) {
 async function getByUserId(req, res) {
     try {
         const { userId } = req.params;
+        if (!isValidObjectId(userId)) {
+            return res.status(400).json({ message: "ID de usuário inválido" });
+        }
+        if (String(userId) !== String(req.id)) {
+            return res.status(403).json({ message: "Acesso negado: este carrinho pertence a outro usuário" });
+        }
 
         const cart = await Cart.findOne({ userId });
 
@@ -159,6 +190,9 @@ async function getByUserId(req, res) {
 async function updateCart(req, res) {
     try {
         const { cartId } = req.params;
+        if (!isValidObjectId(cartId)) {
+            return res.status(400).json({ message: "ID de carrinho inválido" });
+        }
         const { items } = req.body;
 
         // Validar items
@@ -171,10 +205,17 @@ async function updateCart(req, res) {
         if (!cart) {
             return res.status(404).json({ message: "Carrinho não encontrado" });
         }
+        if (!checkOwner(cart, req.id, res)) return;
 
         // Validação de integridade
         const validation = await validateProducts(items);
         if (!validation.valid) {
+            if (validation.invalidId) {
+                return res.status(400).json({
+                    message: "ID de produto inválido",
+                    invalidId: validation.invalidId
+                });
+            }
             return res.status(404).json({
                 message: "Um ou mais produtos não foram encontrados",
                 missingProductIds: validation.missingIds
@@ -187,14 +228,16 @@ async function updateCart(req, res) {
             return res.status(400).json({ message: calculation.error });
         }
 
-        // Atualizar carrinho
-        cart.items = calculation.items;
-        cart.valorTotal = calculation.valorTotal;
-        await cart.save();
+        // Atualizar carrinho de forma atômica
+        const updated = await Cart.findOneAndUpdate(
+            { _id: cartId },
+            { items: calculation.items, valorTotal: calculation.valorTotal },
+            { new: true, runValidators: true }
+        );
 
         res.status(200).json({
             message: "Carrinho atualizado com sucesso",
-            cartId: cart._id,
+            cartId: updated._id,
             items: calculation.items,
             valorTotal: calculation.valorTotal,
             quantidadeItens: calculation.quantidadeItens
@@ -212,11 +255,18 @@ async function updateCart(req, res) {
 async function removeItem(req, res) {
     try {
         const { cartId, itemId } = req.params;
+        if (!isValidObjectId(cartId)) {
+            return res.status(400).json({ message: "ID de carrinho inválido" });
+        }
+        if (!isValidObjectId(itemId)) {
+            return res.status(400).json({ message: "ID de item inválido" });
+        }
 
         const cart = await Cart.findById(cartId);
         if (!cart) {
             return res.status(404).json({ message: "Carrinho não encontrado" });
         }
+        if (!checkOwner(cart, req.id, res)) return;
 
         const itemIndex = cart.items.findIndex(item => item.produtoId.toString() === itemId);
         if (itemIndex === -1) {
@@ -225,8 +275,12 @@ async function removeItem(req, res) {
 
         const removedItem = cart.items[itemIndex];
         cart.items.splice(itemIndex, 1);
-        // Recalculate total from remaining items to avoid NaN issues
-        cart.valorTotal = cart.items.reduce((total, item) => total + (item.subtotal || 0), 0);
+        // Recalcula o total a partir dos subtotais (precoNaCompra * quantidade),
+        // com fallback caso algum item antigo não tenha subtotal persistido
+        cart.valorTotal = cart.items.reduce((total, item) => {
+            const sub = (item.subtotal ?? (item.precoNaCompra * item.quantidade)) || 0;
+            return total + sub;
+        }, 0);
 
         await cart.save();
 
@@ -251,11 +305,15 @@ async function removeItem(req, res) {
 async function recalculateCart(req, res) {
     try {
         const { cartId } = req.params;
+        if (!isValidObjectId(cartId)) {
+            return res.status(400).json({ message: "ID de carrinho inválido" });
+        }
 
         const cart = await Cart.findById(cartId);
         if (!cart) {
             return res.status(404).json({ message: "Carrinho não encontrado" });
         }
+        if (!checkOwner(cart, req.id, res)) return;
 
         if (cart.items.length === 0) {
             return res.status(400).json({ message: "Carrinho vazio" });
@@ -294,10 +352,12 @@ async function recalculateCart(req, res) {
             }
         }
 
-        // Atualizar carrinho
-        cart.items = calculation.items;
-        cart.valorTotal = calculation.valorTotal;
-        await cart.save();
+        // Atualizar carrinho de forma atômica
+        await Cart.findOneAndUpdate(
+            { _id: cartId },
+            { items: calculation.items, valorTotal: calculation.valorTotal },
+            { runValidators: true }
+        );
 
         res.status(200).json({
             message: "Carrinho recalculado com sucesso",
@@ -321,11 +381,17 @@ async function recalculateCart(req, res) {
 async function deleteCart(req, res) {
     try {
         const { cartId } = req.params;
+        if (!isValidObjectId(cartId)) {
+            return res.status(400).json({ message: "ID de carrinho inválido" });
+        }
 
-        const cart = await Cart.findByIdAndDelete(cartId);
+        const cart = await Cart.findById(cartId);
         if (!cart) {
             return res.status(404).json({ message: "Carrinho não encontrado" });
         }
+        if (!checkOwner(cart, req.id, res)) return;
+
+        await Cart.findByIdAndDelete(cartId);
 
         res.status(200).json({
             message: "Carrinho removido com sucesso",

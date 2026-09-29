@@ -5,6 +5,6 @@ export default async function GetItems(){
         const response = await api.get("/produto");
         return response.data;     
     } catch (error) {
-        return response
+        return error.response ?? null
     }
 }

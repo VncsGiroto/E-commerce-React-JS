@@ -13,7 +13,7 @@ const UpdateItem = async (_id, produto) => {
         });
         return response;
     } catch (error) {
-        return error.response
+        return error.response ?? null
     }
 
 };

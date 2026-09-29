@@ -5,6 +5,6 @@ export default async function LogoutUser(){
         const response = await api.post("/user/logout");
         return response
     } catch (error) {
-        return null
+        return error.response ?? null
     }
 }

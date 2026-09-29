@@ -1,4 +1,11 @@
 import Categoria from "../models/Categoria.js";
+import Produto from "../models/Produto.js";
+
+const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
+
+function normalizeNome(nome) {
+    return nome.trim().toLowerCase();
+}
 
 /**
  * GET /categorias
@@ -21,12 +28,15 @@ async function getAll(req, res) {
 async function getById(req, res) {
     try {
         const { id } = req.params;
+        if (!OBJECT_ID_REGEX.test(id)) {
+            return res.status(400).json({ message: "ID de categoria inválido" });
+        }
         const categoria = await Categoria.findById(id);
-        
+
         if (!categoria) {
             return res.status(404).json({ message: "Categoria não encontrada" });
         }
-        
+
         res.status(200).json(categoria);
     } catch (error) {
         console.log(error);
@@ -43,18 +53,23 @@ async function create(req, res) {
         const { nome, descricao } = req.body;
 
         // Validar campos obrigatórios
-        if (!nome) {
+        if (!nome || typeof nome !== 'string' || !nome.trim()) {
             return res.status(400).json({ message: "Campo 'nome' é obrigatório" });
         }
+        if (descricao !== undefined && typeof descricao !== 'string') {
+            return res.status(400).json({ message: "Campo 'descricao' deve ser um texto" });
+        }
+
+        const nomeNormalizado = normalizeNome(nome);
 
         // Verificar se categoria já existe
-        const categoriaExistente = await Categoria.findOne({ nome: nome.toLowerCase() });
+        const categoriaExistente = await Categoria.findOne({ nome: nomeNormalizado });
         if (categoriaExistente) {
-            return res.status(400).json({ message: "Categoria já existe" });
+            return res.status(409).json({ message: "Categoria já existe" });
         }
 
         const novaCategoria = new Categoria({
-            nome: nome.trim(),
+            nome: nomeNormalizado,
             descricao: descricao?.trim(),
         });
 
@@ -73,7 +88,14 @@ async function create(req, res) {
 async function update(req, res) {
     try {
         const { id } = req.params;
+        if (!OBJECT_ID_REGEX.test(id)) {
+            return res.status(400).json({ message: "ID de categoria inválido" });
+        }
         const { nome, descricao } = req.body;
+
+        if (descricao !== undefined && typeof descricao !== 'string') {
+            return res.status(400).json({ message: "Campo 'descricao' deve ser um texto" });
+        }
 
         const categoria = await Categoria.findById(id);
         if (!categoria) {
@@ -81,15 +103,15 @@ async function update(req, res) {
         }
 
         // Verificar se novo nome já é usado por outra categoria
-        if (nome && nome !== categoria.nome) {
-            const categoriaExistente = await Categoria.findOne({ nome: nome.trim() });
+        if (nome && typeof nome === 'string' && normalizeNome(nome) !== categoria.nome) {
+            const categoriaExistente = await Categoria.findOne({ nome: normalizeNome(nome) });
             if (categoriaExistente) {
-                return res.status(400).json({ message: "Já existe categoria com esse nome" });
+                return res.status(409).json({ message: "Já existe categoria com esse nome" });
             }
         }
 
         // Atualizar campo por campo
-        if (nome) categoria.nome = nome.trim();
+        if (nome && typeof nome === 'string' && nome.trim()) categoria.nome = normalizeNome(nome);
         if (descricao !== undefined) categoria.descricao = descricao?.trim();
 
         await categoria.save();
@@ -108,20 +130,22 @@ async function update(req, res) {
 async function deleteById(req, res) {
     try {
         const { id } = req.params;
-        
+        if (!OBJECT_ID_REGEX.test(id)) {
+            return res.status(400).json({ message: "ID de categoria inválido" });
+        }
+
         const categoria = await Categoria.findById(id);
         if (!categoria) {
             return res.status(404).json({ message: "Categoria não encontrada" });
         }
 
-        // Validar se há produtos associados (importar Produto no topo)
-        // const produtosComCategoria = await Produto.countDocuments({ categoriaId: id });
-        // if (produtosComCategoria > 0) {
-        //     return res.status(400).json({ 
-        //         message: "Não é possível deletar categoria com produtos associados",
-        //         produtosCount: produtosComCategoria
-        //     });
-        // }
+        const produtosComCategoria = await Produto.countDocuments({ categoriaId: id });
+        if (produtosComCategoria > 0) {
+            return res.status(409).json({
+                message: "Não é possível deletar categoria com produtos associados",
+                produtosCount: produtosComCategoria
+            });
+        }
 
         await Categoria.findByIdAndDelete(id);
         res.status(200).json({ message: "Categoria deletada com sucesso" });

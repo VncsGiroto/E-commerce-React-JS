@@ -8,6 +8,6 @@ export default async function GetAdminToken(usuario, senha){
         });
         return response
     } catch (error) {
-        return null
+        return error.response ?? null
     }
 }

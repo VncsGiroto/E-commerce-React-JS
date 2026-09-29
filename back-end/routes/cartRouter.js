@@ -12,7 +12,7 @@ cartRouter.post('/criar', checkTokens.CheckUserToken, validateMiddleware.CartVal
 cartRouter.get('/:userId', checkTokens.CheckUserToken, cartRouterController.getByUserId);
 
 // PUT /cart/atualizar/:cartId - Atualizar carrinho recalculando preços (usuário autenticado)
-cartRouter.put('/atualizar/:cartId', checkTokens.CheckUserToken, cartRouterController.updateCart);
+cartRouter.put('/atualizar/:cartId', checkTokens.CheckUserToken, validateMiddleware.CartValidate, cartRouterController.updateCart);
 
 // DELETE /cart/:cartId/item/:itemId - Remover um item do carrinho (usuário autenticado)
 cartRouter.delete('/:cartId/item/:itemId', checkTokens.CheckUserToken, cartRouterController.removeItem);

@@ -7,6 +7,7 @@ const AdmLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,6 +19,8 @@ const AdmLogin = () => {
         }
       } catch (error) {
         return null
+      } finally {
+        setChecking(false);
       }
     };
     checkAuth();
@@ -25,19 +28,33 @@ const AdmLogin = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError('');
+
+    if (!email.trim() || !password.trim()) {
+      setError('Preencha usuário e senha.');
+      return;
+    }
 
     try {
-      const response = await GetAdminToken(email, password);
-      if(response.status == 200){
+      const response = await GetAdminToken(email.trim(), password);
+      if(response?.status === 200){
         navigate('/admin/dashboard', {replace: true});
       }
       else{
-        setError(response.data.message);
+        setError(response?.data?.message || 'Usuário ou senha incorretos');
       }
     } catch (error) {
-      console.log(error)
+      setError('Falha de rede. Tente novamente.');
     }
   };
+
+  if (checking) {
+    return (
+      <div className="login-container">
+        <p>Verificando sessão...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="login-container">

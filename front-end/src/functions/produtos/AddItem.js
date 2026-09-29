@@ -11,7 +11,7 @@ const AddItem = async (produto) => {
         });
         return response;
     } catch (error) {
-        return error.response
+        return error.response ?? null
     }
 
 };

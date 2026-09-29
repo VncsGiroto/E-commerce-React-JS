@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import LogoutAdmin from "../functions/admin/LogoutAdmin";
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +6,14 @@ import GetItems from "../functions/produtos/GetItems";
 import DeleteItems from "../functions/produtos/DeleteItems";
 import AddItem from "../functions/produtos/AddItem";
 import UpdateItem from "../functions/produtos/UpdateItem";
+
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000/";
+
+const resolveImageUrl = (imagem) => {
+    if (!imagem) return "";
+    if (imagem.startsWith("data:") || imagem.startsWith("http")) return imagem;
+    return `${API_URL.replace(/\/$/, "")}/${String(imagem).replace(/^\//, "")}`;
+};
 
 const Container = styled.div`
     display: flex;
@@ -272,6 +280,10 @@ const AdmDashbord = () => {
     const [notification, setNotification] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [imageChanged, setImageChanged] = useState(false);
+    const [listLoading, setListLoading] = useState(true);
+    const [listError, setListError] = useState('');
+    const [deletingId, setDeletingId] = useState(null);
+    const notificationTimeout = useRef(null);
     const [newProduct, setNewProduct] = useState({
         nome: '',
         imagem: '',
@@ -281,29 +293,43 @@ const AdmDashbord = () => {
     });
 
     const showNotification = (message, type = 'success') => {
+        if (notificationTimeout.current) {
+            clearTimeout(notificationTimeout.current);
+        }
         setNotification({ message, type });
-        setTimeout(() => setNotification(null), 3000);
+        notificationTimeout.current = setTimeout(() => setNotification(null), 3000);
+    };
+
+    useEffect(() => {
+        return () => {
+            if (notificationTimeout.current) {
+                clearTimeout(notificationTimeout.current);
+            }
+        };
+    }, []);
+
+    const resetForm = () => {
+        setNewProduct({ nome: '', imagem: '', descricao: '', categoria: '', preco: '' });
+        setImagePreview(null);
+        setImageChanged(false);
+        setEditingProduct(null);
     };
 
     const refetchProducts = async () => {
+        setListLoading(true);
+        setListError('');
         try {
             const data = await GetItems();
-            setProducts(data);
+            setProducts(Array.isArray(data) ? data : []);
         } catch (error) {
-            console.error("Erro ao buscar produtos", error);
+            setListError("Erro ao buscar produtos");
+        } finally {
+            setListLoading(false);
         }
     };
 
     useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const data = await GetItems();
-                setProducts(data);
-            } catch (error) {
-                console.error("Erro ao buscar produtos", error);
-            }
-        };
-        fetchProducts();
+        refetchProducts();
     }, []);
 
     const handleLogout = async () => {
@@ -321,7 +347,7 @@ const AdmDashbord = () => {
 
     const handleEdit = (product) => {
         setEditingProduct(product);
-        setImagePreview(product.imagem);
+        setImagePreview(resolveImageUrl(product.imagem));
         setImageChanged(false);
         setNewProduct({
             nome: product.nome,
@@ -333,13 +359,21 @@ const AdmDashbord = () => {
     };
 
     const handleDelete = async (id) => {
+        if (deletingId) return;
+        if (!window.confirm("Deseja excluir este produto?")) return;
+        setDeletingId(id);
         try {
             const response = await DeleteItems(id);
-            showNotification(response?.message || "Produto Deletado com sucesso!", 'success');
-            await refetchProducts();
+            if (response?.status === 200 || response?.data) {
+                showNotification(response?.data?.message || "Produto deletado com sucesso!", 'success');
+                await refetchProducts();
+            } else {
+                showNotification(response?.data?.message || "Erro ao deletar produto", 'error');
+            }
         } catch (error) {
-            console.error("Erro ao deletar produto", error);
-            showNotification(error?.message || "Erro ao deletar produto", 'error');
+            showNotification(error?.response?.data?.message || "Erro ao deletar produto", 'error');
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -349,56 +383,76 @@ const AdmDashbord = () => {
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64 = reader.result;
-                setImagePreview(base64); // Preview local
-                setImageChanged(true);
-                setNewProduct({
-                    ...newProduct,
-                    imagem: base64.split(',')[1], // Envia só o base64
-                });
-            };
-            reader.readAsDataURL(file);
+        if (!file) return;
+        if (!file.type.startsWith("image/")) {
+            showNotification("Selecione um arquivo de imagem válido.", 'error');
+            return;
         }
+        if (file.size > 2 * 1024 * 1024) {
+            showNotification("A imagem deve ter no máximo 2MB.", 'error');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64 = reader.result;
+            setImagePreview(base64); // Preview local
+            setImageChanged(true);
+            setNewProduct({
+                ...newProduct,
+                imagem: base64.split(',')[1], // Envia só o base64
+            });
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleSaveProduct = async (e) => {
         e.preventDefault();
 
+        const nome = newProduct.nome.trim();
+        const descricao = newProduct.descricao.trim();
+        const categoria = newProduct.categoria.trim();
+        const preco = parseFloat(newProduct.preco);
+
+        if (!nome || !descricao || !categoria) {
+            showNotification("Preencha nome, descrição e categoria.", 'error');
+            return;
+        }
+        if (Number.isNaN(preco) || preco <= 0) {
+            showNotification("Informe um preço válido maior que zero.", 'error');
+            return;
+        }
+
+        const payload = { ...newProduct, nome, descricao, categoria, preco };
+
         try {
             if (editingProduct) {
                 // Atualizar produto existente
-                const dataToSend = { ...newProduct };
+                const dataToSend = { ...payload };
                 // Se a imagem não foi alterada na edição, não envia a imagem
                 if (!imageChanged) {
                     delete dataToSend.imagem;
                 }
                 const updatedProduct = await UpdateItem(editingProduct._id, dataToSend);
-                if (updatedProduct.status === 200) {
-                    showNotification(updatedProduct?.message || "Produto atualizado com sucesso!", 'success');
-                    setEditingProduct(null);
-                    setImageChanged(false);
+                if (updatedProduct?.status === 200) {
+                    showNotification(updatedProduct?.data?.message || "Produto atualizado com sucesso!", 'success');
+                    resetForm();
                     await refetchProducts();
+                } else {
+                    showNotification(updatedProduct?.data?.message || "Erro ao atualizar produto", 'error');
                 }
             } else {
                 // Adicionar novo produto
-                const addedProduct = await AddItem(newProduct);
-                if (addedProduct.status === 200) {
-                    showNotification(addedProduct?.message || "Produto criado com sucesso!", 'success');
+                const addedProduct = await AddItem(payload);
+                if (addedProduct?.status === 200 || addedProduct?.status === 201) {
+                    showNotification(addedProduct?.data?.message || "Produto criado com sucesso!", 'success');
+                    resetForm();
                     await refetchProducts();
+                } else {
+                    showNotification(addedProduct?.data?.message || "Erro ao criar produto", 'error');
                 }
             }
-
-            // Resetar formulário
-            setNewProduct({ nome: '', imagem: '', descricao: '', categoria: '', preco: '' });
-            setImagePreview(null);
-            setImageChanged(false);
-
         } catch (error) {
-            console.error("Erro ao salvar produto", error);
-            showNotification(error?.message || "Erro ao salvar produto", 'error');
+            showNotification(error?.response?.data?.message || "Erro ao salvar produto", 'error');
         }
     };
 
@@ -462,21 +516,31 @@ const AdmDashbord = () => {
                 </FormContainer>
 
                 <h3>Lista de Produtos</h3>
+                {listLoading && <p>Carregando produtos...</p>}
+                {!listLoading && listError && <p>{listError}</p>}
+                {!listLoading && !listError && products.length === 0 && <p>Nenhum produto cadastrado.</p>}
+                {!listLoading && !listError && products.length > 0 && (
                 <ProductList>
-                    {products.map(product => (
+                    {products.map(product => {
+                        const precoNum = parseFloat(product.preco);
+                        return (
                         <ProductCard key={product._id}>
                             <div className="img-wrapper">
-                                <img src={product.imagem} alt={product.nome} />
+                                <img src={resolveImageUrl(product.imagem) || imagePreview || ""} alt={product.nome} />
                             </div>
                             <h4>{product.nome}</h4>
                             <p>{product.descricao}</p>
                             <p>Categoria: {product.categoria}</p>
-                            <p>Preço: R$ {product.preco}</p>
-                            <button onClick={() => handleDelete(product._id)}>Deletar</button>
+                            <p>Preço: R$ {Number.isNaN(precoNum) ? product.preco : precoNum.toFixed(2)}</p>
+                            <button onClick={() => handleDelete(product._id)} disabled={deletingId === product._id}>
+                                {deletingId === product._id ? "Excluindo..." : "Deletar"}
+                            </button>
                             <button onClick={() => handleEdit(product)}>Editar</button>
                         </ProductCard>
-                    ))}
+                        );
+                    })}
                 </ProductList>
+                )}
             </Content>
             {notification && (
                 <Toast type={notification.type}>
