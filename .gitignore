@@ -138,6 +138,9 @@ dist
 !.yarn/sdks
 !.yarn/versions
 
+# Uploads locais (gerados em runtime/testes; não versionar)
+back-end/static/images/*
+
 # Vite files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
