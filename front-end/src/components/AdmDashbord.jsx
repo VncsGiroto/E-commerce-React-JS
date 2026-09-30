@@ -360,7 +360,19 @@ const AdmDashbord = () => {
     };
 
     useEffect(() => {
-        refetchProducts();
+        const loadInitial = async () => {
+            setListLoading(true);
+            setListError('');
+            try {
+                const data = await GetItems();
+                setProducts(Array.isArray(data) ? data : []);
+            } catch {
+                setListError("Erro ao buscar produtos");
+            } finally {
+                setListLoading(false);
+            }
+        };
+        loadInitial();
     }, []);
 
     const handleLogout = async () => {
