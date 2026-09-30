@@ -22,8 +22,12 @@ export function createApp() {
 
     //settings
     app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+    // Aceita localhost e 127.0.0.1 no dev; em produção defina CORS_ORIGIN
+    // (uma origem ou lista separada por vírgula).
+    const defaultOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+    const envOrigins = (process.env.CORS_ORIGIN || '').split(',').map((s) => s.trim()).filter(Boolean);
     app.use(cors({
-        origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+        origin: envOrigins.length ? envOrigins : defaultOrigins,
         credentials: true
     }));
     app.use(cookieParser());
