@@ -1,6 +1,7 @@
 import Produto from "../models/Produto.js";
 import Categoria from "../models/Categoria.js";
 import { saveBase64Image, deleteImageFile } from "../middlewares/base64ToImageMiddleware.js";
+import { getPagination, paginatedResponse } from "../middlewares/pagination.js";
 
 const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
 
@@ -18,12 +19,18 @@ function isValidObjectId(id) {
 
 async function getAll(req, res){
     try {
-        const produtos = await Produto.find().populate('categoriaId');
-
+        const pagination = getPagination(req.query);
+        if (!pagination) {
+            const produtos = await Produto.find().populate('categoriaId');
+            const produtosComImagem = produtos.map(produto => toAbsoluteImageUrl(req, produto));
+            return res.status(200).json(produtosComImagem);
+        }
+        const { page, limit, skip } = pagination;
+        const total = await Produto.countDocuments();
+        const produtos = await Produto.find().populate('categoriaId').skip(skip).limit(limit);
         const produtosComImagem = produtos.map(produto => toAbsoluteImageUrl(req, produto));
-
         res.status(200)
-            .json(produtosComImagem);
+            .json(paginatedResponse({ data: produtosComImagem, total, page, limit }));
     } catch (error) {
         res.status(500)
             .json({message: "Erro Inesperado"})

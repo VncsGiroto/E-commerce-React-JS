@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import GetItems from "../functions/produtos/GetItems.js";
+import CheckUserToken from "../functions/user/CheckUserToken.js";
+import { AddToCart } from "../functions/cart/CartApi.js";
 
 // Estilos
 const Container = styled.div`
@@ -89,9 +92,12 @@ const AddToCartButton = styled(Button)`
 
 // Componente funcional
 export default function Items() {
+    const navigate = useNavigate();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [addingId, setAddingId] = useState(null);
+    const [cartMsg, setCartMsg] = useState(null);
 
     useEffect(() => {
         const loadItems = async () => {
@@ -119,8 +125,27 @@ export default function Items() {
         return <Container>Nenhum item disponível no momento.</Container>;
     }
 
+    const handleAddToCart = async (item) => {
+        setCartMsg(null);
+        const me = await CheckUserToken();
+        const userId = me?.data?._id ?? me?.data?.user?._id ?? null;
+        if (me?.status !== 200 || !userId) {
+            navigate("/login");
+            return;
+        }
+        setAddingId(item._id);
+        const result = await AddToCart(userId, item._id, 1);
+        if (result?.cartId || result?.message) {
+            setCartMsg(`"${item.nome}" adicionado ao carrinho.`);
+        } else {
+            setCartMsg(result?.data?.message ?? "Falha ao adicionar ao carrinho.");
+        }
+        setAddingId(null);
+    };
+
     return (
         <Container>
+            {cartMsg && <p>{cartMsg}</p>}
             <Grid>
                 {items.map((item) => {
                     const precoNum = parseFloat(item.preco);
@@ -135,7 +160,9 @@ export default function Items() {
                                     ? item.preco
                                     : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(precoNum)}
                             </Price>
-                            <AddToCartButton disabled title="Carrinho indisponível no momento">Adicionar ao Carrinho</AddToCartButton>
+                            <AddToCartButton disabled={addingId === item._id} onClick={() => handleAddToCart(item)}>
+                                {addingId === item._id ? "Adicionando..." : "Adicionar ao Carrinho"}
+                            </AddToCartButton>
                         </Info>
                     </Item>
                     );

@@ -79,7 +79,7 @@ async function login(req,res){
             return
         }
 
-        const token = jwt.sign({ id: admin.id }, process.env.JWT_ADMIN_SECRET);
+        const token = jwt.sign({ id: admin.id }, process.env.JWT_ADMIN_SECRET, { expiresIn: '1h' });
 
         res.status(200)
             .cookie('token', token, {
@@ -101,7 +101,12 @@ async function login(req,res){
 
 async function logout(req, res) {
     try {
-        res.status(200).clearCookie('token').json({ message: 'Logout realizado com sucesso' });
+        res.status(200).clearCookie('token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Strict',
+            path: '/',
+        }).json({ message: 'Logout realizado com sucesso' });
     } catch (error) {
         res.status(500)
             .json({message: "Erro Inesperado"})

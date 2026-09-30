@@ -1,6 +1,7 @@
 import { Router } from "express";
 import adminRouterController from "../controllers/adminRouterController.js";
 import checkTokens from "../middlewares/checkTokens.js";
+import { loginLimiter } from "../middlewares/rateLimit.js";
 
 
 const adminRouter = Router();
@@ -16,8 +17,8 @@ const adminRouter = Router();
         }
         next();
     }, adminRouterController.create);
-    adminRouter.post('/login', adminRouterController.login);
+    adminRouter.post('/login', loginLimiter, adminRouterController.login);
     adminRouter.get('/getme',  checkTokens.CheckAdminToken ,adminRouterController.getMe);
-    adminRouter.post('/logout', checkTokens.CheckAdminToken, adminRouterController.logout);
+    adminRouter.post('/logout', adminRouterController.logout);
 
 export default adminRouter;

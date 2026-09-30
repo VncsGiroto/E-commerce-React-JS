@@ -1,5 +1,6 @@
 import Categoria from "../models/Categoria.js";
 import Produto from "../models/Produto.js";
+import { getPagination, paginatedResponse } from "../middlewares/pagination.js";
 
 const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
 
@@ -13,8 +14,15 @@ function normalizeNome(nome) {
  */
 async function getAll(req, res) {
     try {
-        const categorias = await Categoria.find().select('_id nome descricao');
-        res.status(200).json(categorias);
+        const pagination = getPagination(req.query);
+        if (!pagination) {
+            const categorias = await Categoria.find().select('_id nome descricao');
+            return res.status(200).json(categorias);
+        }
+        const { page, limit, skip } = pagination;
+        const total = await Categoria.countDocuments();
+        const categorias = await Categoria.find().select('_id nome descricao').skip(skip).limit(limit);
+        res.status(200).json(paginatedResponse({ data: categorias, total, page, limit }));
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: "Erro ao listar categorias" });

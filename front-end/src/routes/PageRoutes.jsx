@@ -5,6 +5,7 @@ import Register from "../pages/Register";
 import Login from "../pages/Login";
 import AdminLogin from "../pages/AdminLogin";
 import AdminDashboard from "../pages/AdminDashbord";
+import Cart from "../pages/Cart";
 import ProtectedRoute from "../hooks/ProtectedRoute";
 
 export default function PageRoutes(){
@@ -13,6 +14,7 @@ export default function PageRoutes(){
             <Route path="/" element={<Inicio/>}/>
             <Route path="/register" element={<Register/>}/>
             <Route path="/login" element={<Login/>}/>
+            <Route path="/cart" element={<Cart/>}/>
             <Route path="/admin/" element={<AdminLogin/>}/>
             <Route element={<ProtectedRoute />}>
                 <Route path="/admin/dashboard" element={<AdminDashboard />} />

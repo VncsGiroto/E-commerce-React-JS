@@ -124,7 +124,7 @@ cd back-end
 npm install
 ```
 
-Criar arquivo `.env` na raiz do `back-end/`:
+Criar arquivo `.env` na raiz do `back-end/` (veja `back-end/.env.example`):
 
 ```env
 # MongoDB
@@ -136,6 +136,12 @@ JWT_USER_SECRET=sua_chave_secreta_user_super_segura
 
 # Porta
 PORT=5000
+
+# Origem permitida no CORS (front-end)
+CORS_ORIGIN=http://localhost:5173
+
+# Ambiente: development | production
+NODE_ENV=development
 ```
 
 ### 3️⃣ Configurar Frontend
@@ -145,10 +151,10 @@ cd ../front-end
 npm install
 ```
 
-Criar arquivo `.env` na raiz do `front-end/`:
+Criar arquivo `.env` na raiz do `front-end/` (veja `front-end/.env.example`):
 
 ```env
-VITE_API_URL=http://localhost:5000
+VITE_API_URL=http://localhost:4000/
 ```
 
 ### 4️⃣ Iniciar o Projeto
@@ -199,24 +205,45 @@ O frontend estará disponível em `http://localhost:5173`
 
 ## 🔌 Rotas da API
 
+Documentação completa em `back-end/API_ROUTES.md`. Resumo:
+
 ### Autenticação
 ```
-POST   /api/admin/login        - Login de admin
-POST   /api/admin/logout       - Logout de admin
-POST   /api/user/register      - Registrar usuário
-POST   /api/user/login         - Login de usuário
-POST   /api/user/logout        - Logout de usuário
+POST   /admin/criar         - Criar admin (pública, bootstrap)
+POST   /admin/login         - Login de admin (rate-limit 20/15min)
+GET    /admin/getme         - Dados do admin (admin)
+POST   /admin/logout        - Logout de admin
+POST   /user/create         - Registrar usuário
+POST   /user/login          - Login de usuário (rate-limit 20/15min)
+GET    /user/me             - Dados do usuário logado (user)
+GET    /user/logout         - Logout de usuário
+GET    /user/               - Listar usuários (admin, ?page&limit)
 ```
 
 ### Produtos
 ```
-GET    /api/produtos           - Listar todos os produtos
-GET    /api/produtos/:id       - Obter produto por ID
-POST   /api/produtos           - Criar novo produto (admin)
-PUT    /api/produtos/:id       - Atualizar produto (admin)
-DELETE /api/produtos/:id       - Deletar produto (admin)
-GET    /api/produtos/search    - Buscar produtos
+GET    /produto/            - Listar produtos (?page&limit)
+GET    /produto/:categoria  - Produtos por categoria (ObjectId)
+POST   /produto/criar       - Criar produto (admin)
+PUT    /produto/update      - Atualizar produto (admin, body {_id, ...})
+DELETE /produto/delete/:id  - Deletar produto (admin)
 ```
+
+### Categorias / Carrinho
+```
+GET    /categoria/          - Listar categorias (?page&limit)
+POST   /categoria/criar     - Criar categoria (admin)
+PUT    /categoria/atualizar/:id    - Atualizar categoria (admin)
+DELETE /categoria/deletar/:id     - Deletar categoria (admin)
+POST   /cart/criar          - Criar/atualizar carrinho (user)
+GET    /cart/:userId        - Carrinho do usuário (user, dono)
+PUT    /cart/atualizar/:cartId     - Atualizar carrinho (user, dono)
+DELETE /cart/:cartId/item/:itemId  - Remover item (user, dono)
+POST   /cart/recalcular/:cartId    - Recalcular preços (user, dono)
+DELETE /cart/:cartId        - Deletar carrinho (user, dono)
+```
+
+Tokens JWT expiram em 1h. Listas aceitam `?page&limit` (padrão 20, máx 100).
 
 ---
 
@@ -322,24 +349,26 @@ ias
 
 ## 🔒 Segurança
 
-- ✅ Senhas com hash (bcryptjs)
-- ✅ JWT com secrets seguros
-- ✅ Validação de entrada de dados
-- ✅ CORS configurado
-- ✅ Rotas protegidas por autenticação
+- ✅ Senhas com hash (bcrypt, salt 12)
+- ✅ JWT com expiração de 1h + cookies httpOnly/sameSite
+- ✅ Validação de entrada de dados (vine)
+- ✅ CORS configurado via env
+- ✅ Helmet (headers) + rate-limit geral e anti brute-force no login
+- ✅ Rotas protegidas por autenticação + checagem de dono no carrinho
 
 ---
 
 ## 🚦 Status do Projeto
 
 - ✅ Backend CRUD completo
-- ✅ Autenticação JWT (Admin e User)
+- ✅ Autenticação JWT com expiração (Admin e User)
 - ✅ Painel administrativo funcional
 - ✅ Upload e exibição de imagens
 - ✅ Sistema de notificações
-- 🔄 Frontend cliente em desenvolvimento
-- 🔄 Carrinho de compras
-- 🔄 Sistema de pedidos
+- ✅ Carrinho de compras (back + front em `/cart`)
+- ✅ Paginação nas listagens
+- 🔄 Sistema de pedidos (checkout)
+- 🔄 Busca/filtro de produtos no front
 
 ---
 

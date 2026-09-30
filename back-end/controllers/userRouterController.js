@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import bcrypt from "bcrypt"
 import 'dotenv/config'
 import jwt from "jsonwebtoken";
+import { getPagination, paginatedResponse } from "../middlewares/pagination.js";
 
 function sanitizeUser(userDoc) {
     const obj = userDoc.toObject();
@@ -11,10 +12,16 @@ function sanitizeUser(userDoc) {
 
 async function getAll(req, res){
     try {
-
-        const users = await User.find().select('-senha');
+        const pagination = getPagination(req.query);
+        if (!pagination) {
+            const users = await User.find().select('-senha');
+            return res.status(200).json(users);
+        }
+        const { page, limit, skip } = pagination;
+        const total = await User.countDocuments();
+        const users = await User.find().select('-senha').skip(skip).limit(limit);
         res.status(200)
-            .json(users);
+            .json(paginatedResponse({ data: users, total, page, limit }));
     } catch (error) {
         res.status(500)
             .json({message: "Erro Inesperado"})
@@ -54,7 +61,7 @@ async function getMe(req, res) {
             return;
         }
 
-        res.status(200).json({ nome: user.nome });
+        res.status(200).json({ _id: user._id, nome: user.nome, email: user.email });
     } catch (error) {
         res.status(500).json({ message: "Erro Inesperado" });
         console.log(error);
@@ -78,7 +85,7 @@ async function login(req, res) {
             return;
         }
 
-        const token = jwt.sign({ id: user.id }, process.env.JWT_USER_SECRET);
+        const token = jwt.sign({ id: user.id }, process.env.JWT_USER_SECRET, { expiresIn: '1h' });
 
         res.status(200)
             .cookie('Usertoken', token, {
@@ -99,7 +106,12 @@ async function login(req, res) {
 
 async function logout(req, res) {
     try {
-        res.status(200).clearCookie('Usertoken').json({ message: 'Logout realizado com sucesso' });
+        res.status(200).clearCookie('Usertoken', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'Strict',
+            path: '/',
+        }).json({ message: 'Logout realizado com sucesso' });
     } catch (error) {
         res.status(500).json({ message: "Erro Inesperado" });
         console.log(error);

@@ -1,6 +1,7 @@
 import Cart from "../models/Cart.js";
 import Produto from "../models/Produto.js";
 import User from "../models/User.js";
+import { getPagination, paginatedResponse } from "../middlewares/pagination.js";
 
 const OBJECT_ID_REGEX = /^[0-9a-fA-F]{24}$/;
 
@@ -409,12 +410,23 @@ async function deleteCart(req, res) {
  */
 async function getAll(req, res) {
     try {
-        const carts = await Cart.find();
-
+        const pagination = getPagination(req.query);
+        if (!pagination) {
+            const carts = await Cart.find();
+            return res.status(200).json({
+                message: "Carrinhos obtidos com sucesso",
+                total: carts.length,
+                carrinhos: carts
+            });
+        }
+        const { page, limit, skip } = pagination;
+        const total = await Cart.countDocuments();
+        const carts = await Cart.find().skip(skip).limit(limit);
+        const paged = paginatedResponse({ data: carts, total, page, limit });
         res.status(200).json({
             message: "Carrinhos obtidos com sucesso",
-            total: carts.length,
-            carrinhos: carts
+            ...paged,
+            carrinhos: paged.data,
         });
     } catch (error) {
         console.log(error);

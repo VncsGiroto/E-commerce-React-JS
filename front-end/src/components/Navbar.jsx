@@ -83,6 +83,7 @@ export default function Navbar() {
             <Logo src={logo} alt="logo"/>
             <Actions>
                 {userName && <UserName>Olá, {userName}</UserName>}
+                <ActionButtons to="/cart">Carrinho</ActionButtons>
                 <ActionButtons to="/login">Entrar</ActionButtons>
             </Actions>
         </Modelo>

@@ -1,9 +1,10 @@
 # 📚 Documentação de Rotas - API E-commerce
 
 ## 🌐 Configurações Gerais
-- **URL Base**: `http://localhost:4000`
-- **CORS Origin**: `http://localhost:5173`
+- **URL Base**: `http://localhost:4000` (ou `PORT` do `.env`)
+- **CORS Origin**: `CORS_ORIGIN` do `.env` (padrão `http://localhost:5173`)
 - **Recursos Estáticos**: `/static` (imagens, etc.)
+- **Paginação**: `GET /produto/`, `GET /user/`, `GET /categoria/` e `GET /cart/` aceitam `?page&limit` (padrão 20, máx 100) e retornam `{ data, page, limit, total, totalPages }`. Sem query params, a resposta legada é mantida.
 
 ---
 
@@ -59,16 +60,16 @@ GET /user/me
 - **Descrição**: Retorna os dados do usuário autenticado
 - **Autenticação**: ✅ Requerida (CheckUserToken)
 - **Status de Sucesso**: 200 OK
+- **Resposta**: `{ "_id": "string", "nome": "string", "email": "string" }`
 - **Erro**: 401 Unauthorized (token inválido ou expirado)
 
 ### 5. Logout do Usuário
 ```
 GET /user/logout
 ```
-- **Descrição**: Faz logout do usuário e invalida o token
-- **Autenticação**: ✅ Requerida (CheckUserToken)
+- **Descrição**: Faz logout do usuário e limpa o cookie
+- **Autenticação**: ❌ Não requerida (funciona mesmo com token expirado)
 - **Status de Sucesso**: 200 OK
-- **Erro**: 401 Unauthorized
 
 ---
 
@@ -91,9 +92,10 @@ GET /produto/:categoria
 - **Descrição**: Retorna produtos de uma categoria específica
 - **Autenticação**: ❌ Não requerida
 - **Parâmetros**:
-  - `categoria` (string): Nome da categoria desejada
+  - `categoria` (string): ObjectId (24 hex) da categoria
 - **Status de Sucesso**: 200 OK
-- **Exemplo**: `GET /produto/eletrônicos`
+- **Erro**: 400 Bad Request (ID inválido)
+- **Exemplo**: `GET /produto/507f1f77bcf86cd799439011`
 
 ### 3. Criar Novo Produto
 ```
@@ -107,7 +109,7 @@ POST /produto/criar
 {
   "nome": "string",
   "descricao": "string",
-  "categoria": "string",
+  "categoriaId": "string (ObjectId)",
   "preco": "number",
   "imagem": "string (base64 ou URL)"
 }
@@ -125,12 +127,12 @@ PUT /produto/update
 - **Body Esperado**:
 ```json
 {
-  "id": "string",
-  "nome": "string",
-  "descricao": "string",
-  "categoria": "string",
-  "preco": "number",
-  "imagem": "string (base64 ou URL)"
+  "_id": "string (ObjectId do produto)",
+  "nome": "string (opcional)",
+  "descricao": "string (opcional)",
+  "categoriaId": "string (ObjectId, opcional)",
+  "preco": "number (opcional)",
+  "imagem": "string (base64, opcional — omita para manter a atual)"
 }
 ```
 - **Status de Sucesso**: 200 OK
@@ -347,18 +349,16 @@ GET /cart/
 ```
 POST /admin/criar
 ```
-- **Descrição**: Cria uma nova conta de administrador
-- **Autenticação**: ✅ Requerida (CheckAdminToken)
+- **Descrição**: Cria uma nova conta de administrador (rota pública para bootstrap do primeiro admin)
+- **Autenticação**: ❌ Não requerida
 - **Body Esperado**:
 ```json
 {
-  "email": "string",
-  "senha": "string",
-  "nome": "string"
+  "usuario": "string",
+  "senha": "string (mín. 6 caracteres)"
 }
 ```
 - **Status de Sucesso**: 201 Created
-- **Erro**: 401 Unauthorized (usuário não é admin)
 
 ### 2. Login Admin
 ```
@@ -369,7 +369,7 @@ POST /admin/login
 - **Body Esperado**:
 ```json
 {
-  "email": "string",
+  "usuario": "string",
   "senha": "string"
 }
 ```
@@ -383,20 +383,29 @@ GET /admin/getme
 - **Descrição**: Retorna os dados do administrador autenticado
 - **Autenticação**: ✅ Requerida (CheckAdminToken)
 - **Status de Sucesso**: 200 OK
+- **Resposta**: `{ "usuario": "string" }`
 - **Erro**: 401 Unauthorized (token inválido ou expirado)
 
 ### 4. Logout Admin
 ```
 POST /admin/logout
 ```
-- **Descrição**: Faz logout do administrador e invalida o token
-- **Autenticação**: ✅ Requerida (CheckAdminToken)
+- **Descrição**: Faz logout do administrador e limpa o cookie
+- **Autenticação**: ❌ Não requerida (funciona mesmo com token expirado)
 - **Status de Sucesso**: 200 OK
-- **Erro**: 401 Unauthorized
 
 ---
 
 ## 🔑 Autenticação e Segurança
+
+### Tokens JWT
+- Tokens de user e admin expiram em **1h** (`expiresIn: '1h'`), alinhados ao cookie (`maxAge` 1h)
+- Token expirado/ausente → `401`; token inválido → `403`
+- Cookies `httpOnly`, `sameSite: Strict`, `secure` ativo quando `NODE_ENV=production`
+
+### Rate-limit
+- Geral: 300 req / 15min por IP
+- Login (`/user/login`, `/admin/login`): 20 tentativas / 15min por IP → `429`
 
 ### Tipos de Autenticação
 
@@ -574,7 +583,7 @@ DELETE /categoria/deletar/:id
 | POST | `/cart/recalcular/:cartId` | ✅ User | Recalcular com preços atuais |
 | DELETE | `/cart/:cartId` | ✅ User | Deletar carrinho |
 | GET | `/cart/` | ✅ Admin | Listar todos os carrinhos |
-| POST | `/admin/criar` | ✅ Admin | Criar admin |
+| POST | `/admin/criar` | ❌ | Criar admin (bootstrap) |
 | POST | `/admin/login` | ❌ | Login admin |
 | GET | `/admin/getme` | ✅ Admin | Dados do admin |
 | POST | `/admin/logout` | ✅ Admin | Logout admin |
@@ -756,7 +765,7 @@ curl -X GET http://localhost:4000/produto/507f1f77bcf86cd799439011 \
 curl -X POST http://localhost:4000/admin/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "admin@example.com",
+    "usuario": "admin",
     "senha": "senhaadmin123"
   }'
 ```
