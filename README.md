@@ -142,6 +142,10 @@ CORS_ORIGIN=http://localhost:5173
 
 # Ambiente: development | production
 NODE_ENV=development
+
+# Seed do admin inicial (opcional)
+# BOOTSTRAP_ADMIN_USER=admin
+# BOOTSTRAP_ADMIN_SENHA=troque-por-senha-forte
 ```
 
 ### 3️⃣ Configurar Frontend

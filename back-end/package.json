@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon server.js",
-    "test": "node --test tests/auth.test.js tests/produtos.test.js tests/cart.test.js"
+    "test": "node --test tests/auth.test.js tests/produtos.test.js tests/cart.test.js tests/seed.test.js"
   },
   "keywords": [],
   "author": "",
