@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import CheckAdminToken from '../functions/admin/CheckAdminToken';
 
@@ -10,7 +10,7 @@ const ProtectedRoute = () => {
         try {
             const response = await CheckAdminToken();
             setIsAuthenticated(!!response);
-        } catch (error) {
+        } catch {
             setIsAuthenticated(false);
         }
     };

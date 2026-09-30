@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import Navbar from "../components/Navbar";
@@ -72,7 +72,6 @@ function formatBRL(value) {
 
 export default function Cart() {
     const navigate = useNavigate();
-    const [userId, setUserId] = useState(null);
     const [cart, setCart] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -86,7 +85,6 @@ export default function Cart() {
                 navigate("/login");
                 return;
             }
-            setUserId(id);
             const result = await GetCart(id);
             if (result?.cartId) {
                 setCart(result);
@@ -99,13 +97,6 @@ export default function Cart() {
         };
         load();
     }, [navigate]);
-
-    const refresh = async (id) => {
-        const result = await GetCart(id ?? userId);
-        if (result?.cartId) setCart(result);
-        else if (result?.status === 404) setCart(null);
-        return result;
-    };
 
     const changeQty = async (produtoId, delta) => {
         if (!cart?.cartId) return;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import GetUserToken from '../functions/user/GetUserToken';
@@ -132,7 +132,7 @@ const UserLogin = () => {
                 if (response) {
                     navigate('/', { replace: true });
                 }
-            } catch (error) {
+            } catch {
                 return null;
             } finally {
                 setChecking(false);
@@ -159,7 +159,7 @@ const UserLogin = () => {
             } else {
                 setError(response?.data?.message || 'Email ou senha incorretos');
             }
-        } catch (error) {
+        } catch {
             setError('Erro ao fazer login. Tente novamente.');
         } finally {
             setIsLoading(false);

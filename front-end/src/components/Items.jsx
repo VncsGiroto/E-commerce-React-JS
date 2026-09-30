@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import GetItems from "../functions/produtos/GetItems.js";
@@ -104,7 +104,7 @@ export default function Items() {
             try {
                 const data = await GetItems();
                 setItems(Array.isArray(data) ? data : []);
-            } catch (err) {
+            } catch {
                 setError("Ocorreu um erro ao carregar os itens.");
             } finally {
                 setLoading(false);

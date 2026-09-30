@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import LogoutAdmin from "../functions/admin/LogoutAdmin";
 import { useNavigate } from 'react-router-dom';
@@ -321,7 +321,7 @@ const AdmDashbord = () => {
         try {
             const data = await GetItems();
             setProducts(Array.isArray(data) ? data : []);
-        } catch (error) {
+        } catch {
             setListError("Erro ao buscar produtos");
         } finally {
             setListLoading(false);

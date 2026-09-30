@@ -1,4 +1,3 @@
-import React from 'react';
 import UserRegister from '../components/UserRegister';
 
 const Register = () => {

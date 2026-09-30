@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GetAdminToken from '../functions/admin/GetAdminToken.js';
 import CheckAdminToken from '../functions/admin/CheckAdminToken.js';
@@ -17,7 +17,7 @@ const AdmLogin = () => {
         if (response) {
           navigate('/admin/dashboard', {replace: true}); // Redireciona se já estiver autenticado
         }
-      } catch (error) {
+      } catch {
         return null
       } finally {
         setChecking(false);
@@ -43,7 +43,7 @@ const AdmLogin = () => {
       else{
         setError(response?.data?.message || 'Usuário ou senha incorretos');
       }
-    } catch (error) {
+    } catch {
       setError('Falha de rede. Tente novamente.');
     }
   };

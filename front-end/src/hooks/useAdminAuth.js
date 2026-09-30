@@ -14,7 +14,7 @@ const useAdminAuth = () => {
                 } else {
                     setAdmin(null);
                 }
-            } catch (error) {
+            } catch {
                 setAdmin(null); // Se falhar, não está autenticado
             } finally {
                 setLoading(false);

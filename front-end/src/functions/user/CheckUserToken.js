@@ -4,7 +4,7 @@ export default async function CheckUserToken(){
     try {
         const response = await api.get("/user/me")
         return response;
-    } catch (error) {
+    } catch {
         return null;
     }
 }
