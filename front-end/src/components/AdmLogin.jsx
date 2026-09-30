@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GetAdminToken from '../functions/admin/GetAdminToken.js';
 import CheckAdminToken from '../functions/admin/CheckAdminToken.js';
+import { Button, Container, ErrorMessage, FormGroup, FormWrapper, Input, Title } from './authStyles';
 
 const AdmLogin = () => {
-  const [email, setEmail] = useState('');
+  const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(true);
@@ -30,13 +31,13 @@ const AdmLogin = () => {
     e.preventDefault();
     setError('');
 
-    if (!email.trim() || !password.trim()) {
+    if (!usuario.trim() || !password.trim()) {
       setError('Preencha usuário e senha.');
       return;
     }
 
     try {
-      const response = await GetAdminToken(email.trim(), password);
+      const response = await GetAdminToken(usuario.trim(), password);
       if(response?.status === 200){
         navigate('/admin/dashboard', {replace: true});
       }
@@ -50,34 +51,46 @@ const AdmLogin = () => {
 
   if (checking) {
     return (
-      <div className="login-container">
-        <p>Verificando sessão...</p>
-      </div>
+      <Container>
+        <FormWrapper>
+          <p>Verificando sessão...</p>
+        </FormWrapper>
+      </Container>
     );
   }
 
   return (
-    <div className="login-container">
-      <h2>Login</h2>
-      <form onSubmit={handleLogin}>
-        <input
-          type="text"
-          placeholder="user"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Senha"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit">Entrar</button>
-        {error && <p className="error">{error}</p>}
-      </form>
-    </div>
+    <Container>
+      <FormWrapper>
+        <Title>Admin</Title>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+        <form onSubmit={handleLogin}>
+          <FormGroup>
+            <label htmlFor="usuario">Usuário</label>
+            <Input
+              id="usuario"
+              type="text"
+              placeholder="admin"
+              value={usuario}
+              onChange={(e) => setUsuario(e.target.value)}
+              required
+            />
+          </FormGroup>
+          <FormGroup>
+            <label htmlFor="password">Senha</label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Senha"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </FormGroup>
+          <Button type="submit">Entrar</Button>
+        </form>
+      </FormWrapper>
+    </Container>
   );
 };
 

@@ -61,27 +61,19 @@ const Price = styled.span`
     color: #000;
 `;
 
-const Button = styled.button`
+const AddToCartButton = styled.button`
     display: block;
     width: 100%;
     padding: 10px;
     margin-top: 10px;
-    background-color: #000;
     color: #fff;
     font-size: 16px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.3s;
-
-    &:hover {
-      background-color: #444;
-    }
-`;
-
-const AddToCartButton = styled(Button)`
     background-color: #007bff;
-    &:hover {
+    &:hover:not(:disabled) {
       background-color: #0056b3;
     }
     &:disabled {

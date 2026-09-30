@@ -19,6 +19,10 @@ const Container = styled.div`
     display: flex;
     min-height: 100vh;
     background-color: #f4f4f4;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+    }
 `;
 
 const Sidebar = styled.div`
@@ -32,6 +36,13 @@ const Sidebar = styled.div`
     height: 100vh;
     overflow-y: auto;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+
+    @media (max-width: 768px) {
+        position: static;
+        width: 100%;
+        height: auto;
+        box-shadow: none;
+    }
 `;
 
 const Content = styled.div`
@@ -39,6 +50,10 @@ const Content = styled.div`
     padding: 20px;
     margin-left: 250px;
     overflow-y: auto;
+
+    @media (max-width: 768px) {
+        margin-left: 0;
+    }
 `;
 
 const Header = styled.div`
@@ -128,18 +143,34 @@ const ProductCard = styled.div`
         font-size: 14px;
         color: #555;
     }
+`;
 
-    button {
-        background: #e74c3c;
-        color: white;
-        border: none;
-        padding: 8px 12px;
-        cursor: pointer;
-        border-radius: 5px;
-        margin: 5px;
-        &:hover {
-            background: #c0392b;
-        }
+const CardButton = styled.button`
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 5px;
+    margin: 5px;
+    transition: background 0.3s ease;
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+`;
+
+const EditButton = styled(CardButton)`
+    background: #1abc9c;
+    &:hover:not(:disabled) {
+        background: #16a085;
+    }
+`;
+
+const DeleteButton = styled(CardButton)`
+    background: #e74c3c;
+    &:hover:not(:disabled) {
+        background: #c0392b;
     }
 `;
 
@@ -532,10 +563,10 @@ const AdmDashbord = () => {
                             <p>{product.descricao}</p>
                             <p>Categoria: {product.categoria}</p>
                             <p>Preço: R$ {Number.isNaN(precoNum) ? product.preco : precoNum.toFixed(2)}</p>
-                            <button onClick={() => handleDelete(product._id)} disabled={deletingId === product._id}>
+                            <DeleteButton onClick={() => handleDelete(product._id)} disabled={deletingId === product._id}>
                                 {deletingId === product._id ? "Excluindo..." : "Deletar"}
-                            </button>
-                            <button onClick={() => handleEdit(product)}>Editar</button>
+                            </DeleteButton>
+                            <EditButton onClick={() => handleEdit(product)}>Editar</EditButton>
                         </ProductCard>
                         );
                     })}
