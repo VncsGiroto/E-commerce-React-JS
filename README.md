@@ -106,7 +106,7 @@ E-commerce-React-JS/
 ## ⚙️ Configuração e Instalação
 
 ### Pré-requisitos
-- **Node.js** (v14+)
+- **Node.js** (v20+)
 - **npm** ou **yarn**
 - **MongoDB** (local ou Atlas)
 
@@ -167,6 +167,12 @@ VITE_API_URL=http://localhost:4000/
 ```bash
 cd back-end
 npm start
+```
+
+Para desenvolvimento com recarregamento automático (Node 20+):
+```bash
+cd back-end
+npm run dev
 ```
 
 **Terminal 2 - Frontend:**
