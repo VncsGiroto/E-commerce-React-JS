@@ -12,7 +12,7 @@
   "description": "",
   "type": "module",
   "dependencies": {
-    "@vinejs/vine": "^3.0.0",
+    "@vinejs/vine": "^4.4.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
