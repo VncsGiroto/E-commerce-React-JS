@@ -1,7 +1,7 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
-import { setupDb, teardownDb } from './helpers.js';
+import { setupDb, teardownDb, createTestAdmin } from './helpers.js';
 
 const { default: app } = await import('../app.js');
 
@@ -28,7 +28,7 @@ describe('carrinho', () => {
     });
 
     it('prepara produto', async () => {
-        await admin.post('/admin/criar').send({ usuario: 'admin', senha: 'senhaadmin123' });
+        await createTestAdmin('admin', 'senhaadmin123');
         await admin.post('/admin/login').send({ usuario: 'admin', senha: 'senhaadmin123' });
         const cat = await admin.post('/categoria/criar').send({ nome: 'Geral' });
         const prod = await admin.post('/produto/criar').send({

@@ -4,7 +4,7 @@
 - **URL Base**: `http://localhost:4000` (ou `PORT` do `.env`)
 - **CORS Origin**: `CORS_ORIGIN` do `.env` (padrão `http://localhost:5173`)
 - **Recursos Estáticos**: `/static` (imagens, etc.)
-- **Paginação**: `GET /produto/`, `GET /user/`, `GET /categoria/` e `GET /cart/` aceitam `?page&limit` (padrão 20, máx 100) e retornam `{ data, page, limit, total, totalPages }`. Sem query params, a resposta legada é mantida.
+- **Paginação**: `GET /produto/`, `GET /user/`, `GET /categoria/`, `GET /cart/` e `GET /order/` aceitam `?page&limit` (padrão 20, máx 100) e retornam `{ data, page, limit, total, totalPages }` (rotas de carrinho/pedidos incluem ainda envelope extra de compatibilidade `carrinhos`/`pedidos`). Sem query params, a resposta legada é mantida.
 
 ---
 
@@ -116,6 +116,7 @@ POST /produto/criar
 ```
 - **Status de Sucesso**: 201 Created
 - **Erro**: 401 Unauthorized (não é admin)
+- **Limite**: imagem de até 2MiB (base64 ocupa ~2,8MB no JSON; bloqueios acima disso retornam 400/413)
 
 ### 4. Atualizar Produto
 ```
@@ -152,7 +153,7 @@ DELETE /produto/delete/:id
 
 ---
 
-## � Rotas de Carrinho
+## 🛒 Rotas de Carrinho
 
 **Base URL**: `/cart/`
 
@@ -341,24 +342,73 @@ GET /cart/
 
 ---
 
-## �🔐 Rotas de Administrador
+## 🧾 Rotas de Pedidos (pagamento simulado)
+
+**Base URL**: `/order/`
+
+> O checkout usa pagamento simulado: nenhum gateway é chamado e todo pedido
+> criado recebe `status: "pago_simulado"`. O front-end nunca envia preços —
+> o back-end recalcula a partir do carrinho (fonte da verdade) e esvazia
+> apenas o carrinho que originou o pedido.
+
+### 1. Finalizar Compra (Checkout)
+```
+POST /order/checkout
+```
+- **Descrição**: Cria um pedido a partir do carrinho do usuário logado, mesclando itens duplicados por produto (soma validada como inteiro 1–999) e recalculando preços atuais. Persiste o `cartId` de origem no pedido e apaga exclusivamente esse carrinho. Replay da mesma chave retorna o pedido original sem apagar carrinho novo. O mesmo carrinho não gera dois pedidos: sem carrinho/consumido → `400`; corrida simultânea com chave diferente em conflito no `cartId` → `409`.
+- **Autenticação**: ✅ Requerida (CheckUserToken)
+- **Header obrigatório**: `X-Idempotency-Key: string (1–128 chars)`
+- **Body**: nenhum campo obrigatório (totais enviados são ignorados)
+- **Resposta de Sucesso** (201 Created):
+```json
+{
+  "message": "Pedido criado com sucesso",
+  "_id": "string",
+  "cartId": "string",
+  "items": [{ "produtoId": "string", "nome": "string", "quantidade": "number", "preco": "number", "subtotal": "number" }],
+  "total": "number",
+  "status": "pago_simulado",
+  "idempotencyKey": "string",
+  "createdAt": "string"
+}
+```
+- **Replay** (200 OK): `{ "message": "Pedido já processado", ...pedido }`
+- **Erros**: 400 (sem header, chave > 128 chars, sem carrinho/carrinho vazio ou quantidade inválida), 404 (produto não encontrado), 409 (conflito simultâneo: carrinho já utilizado em outro pedido com chave diferente), 401/403 (auth)
+
+### 2. Listar Meus Pedidos
+```
+GET /order/
+GET /order/?page=1&limit=20
+```
+- **Descrição**: Lista apenas os pedidos do usuário logado (mais recentes primeiro). Sem query params retorna o contrato legado `{ total, pedidos }`; com `?page&limit` retorna paginação `{ data, page, limit, total, totalPages, pedidos }` (coerente com `getPagination`: padrão 20, máx 100).
+- **Autenticação**: ✅ Requerida (CheckUserToken)
+- **Status de Sucesso**: 200 OK
+- **Erro**: 401 Unauthorized
+
+### 3. Obter Pedido por ID
+```
+GET /order/:id
+```
+- **Descrição**: Retorna um pedido do usuário logado. Por privacidade, ID inválido → 400; pedido inexistente **ou de outro usuário** → 404 (não revela existência).
+- **Autenticação**: ✅ Requerida (CheckUserToken)
+- **Parâmetros**:
+  - `id` (string): ObjectId do pedido
+- **Status de Sucesso**: 200 OK
+- **Erros**: 400 (ID inválido), 404 (não encontrado), 401 (auth)
+
+---
+
+## 🔐 Rotas de Administrador
 
 **Base URL**: `/admin/`
 
-### 1. Criar Novo Admin
+### 1. Criar Novo Admin — REMOVIDA
 ```
 POST /admin/criar
 ```
-- **Descrição**: Cria uma nova conta de administrador (rota pública para bootstrap do primeiro admin)
-- **Autenticação**: ❌ Não requerida
-- **Body Esperado**:
-```json
-{
-  "usuario": "string",
-  "senha": "string (mín. 6 caracteres)"
-}
-```
-- **Status de Sucesso**: 201 Created
+- **Status**: ⛔ Indisponível (retorna `404`)
+- **Motivo**: rota pública de criação de admin removida por segurança.
+- O admin inicial é criado via `BOOTSTRAP_ADMIN_USER`/`BOOTSTRAP_ADMIN_SENHA` pelo `seedAdmin` na inicialização (`back-end/db/seedAdmin.js`).
 
 ### 2. Login Admin
 ```
@@ -440,6 +490,7 @@ POST /admin/logout
 #### base64ToImageMiddleware
 - Converte imagens em base64 para arquivos salvos no servidor
 - Armazena imagens em `/static/images/`
+- Limite de 2MiB por imagem (acima disso retorna 400)
 - Middleware condicional: apenas processa se houver imagem no body
 
 ---
@@ -583,7 +634,10 @@ DELETE /categoria/deletar/:id
 | POST | `/cart/recalcular/:cartId` | ✅ User | Recalcular com preços atuais |
 | DELETE | `/cart/:cartId` | ✅ User | Deletar carrinho |
 | GET | `/cart/` | ✅ Admin | Listar todos os carrinhos |
-| POST | `/admin/criar` | ❌ | Criar admin (bootstrap) |
+| POST | `/order/checkout` | ✅ User | Checkout simulado (header `X-Idempotency-Key`) → 201 / replay 200 |
+| GET | `/order/` | ✅ User | Listar meus pedidos (`?page&limit`) |
+| GET | `/order/:id` | ✅ User | Obter pedido (404 se não for dono) |
+| POST | `/admin/criar` | ⛔ Removida (404) | Rota indisponível — admin inicial via BOOTSTRAP_ADMIN_* + seedAdmin |
 | POST | `/admin/login` | ❌ | Login admin |
 | GET | `/admin/getme` | ✅ Admin | Dados do admin |
 | POST | `/admin/logout` | ✅ Admin | Logout admin |
@@ -700,6 +754,27 @@ curl -X POST http://localhost:4000/cart/recalcular/seu_cart_id \
 curl -X DELETE http://localhost:4000/cart/seu_cart_id \
   -H "Cookie: token=seu_token_usuario_aqui"
 ```
+
+### Finalizar Compra (Checkout simulado)
+```bash
+curl -X POST http://localhost:4000/order/checkout \
+  -H "Cookie: token=seu_token_usuario_aqui" \
+  -H "X-Idempotency-Key: chave-unica-do-pedido"
+```
+- Cria pedido com `status: "pago_simulado"` a partir do carrinho e apaga só o carrinho de origem. Repetir a mesma chave retorna `200 + "Pedido já processado"` sem apagar carrinho novo.
+
+### Listar Meus Pedidos (com paginação)
+```bash
+curl -X GET "http://localhost:4000/order/?page=1&limit=20" \
+  -H "Cookie: token=seu_token_usuario_aqui"
+```
+
+### Obter Pedido por ID
+```bash
+curl -X GET http://localhost:4000/order/seu_pedido_id \
+  -H "Cookie: token=seu_token_usuario_aqui"
+```
+- Retorna `404` quando o pedido não existe ou pertence a outro usuário.
 
 ### Listar Todas as Categorias
 ```bash
@@ -843,4 +918,4 @@ Duas camadas de validação garantem segurança e confiabilidade:
 
 ---
 
-**Última atualização**: Março 2026 (Inclusão de rotas de Categorias)
+**Última atualização**: Outubro 2026 (Checkout simulado concluído; replay idempotente com limpeza só do carrinho original)

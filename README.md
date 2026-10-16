@@ -135,7 +135,7 @@ JWT_ADMIN_SECRET=sua_chave_secreta_admin_super_segura
 JWT_USER_SECRET=sua_chave_secreta_user_super_segura
 
 # Porta
-PORT=5000
+PORT=4000
 
 # Origem permitida no CORS (front-end)
 CORS_ORIGIN=http://localhost:5173
@@ -213,7 +213,6 @@ Documentação completa em `back-end/API_ROUTES.md`. Resumo:
 
 ### Autenticação
 ```
-POST   /admin/criar         - Criar admin (pública, bootstrap)
 POST   /admin/login         - Login de admin (rate-limit 20/15min)
 GET    /admin/getme         - Dados do admin (admin)
 POST   /admin/logout        - Logout de admin
@@ -247,7 +246,17 @@ POST   /cart/recalcular/:cartId    - Recalcular preços (user, dono)
 DELETE /cart/:cartId        - Deletar carrinho (user, dono)
 ```
 
+### Pedidos (pagamento simulado)
+```
+POST   /order/checkout      - Checkout a partir do carrinho (user, header X-Idempotency-Key 1–128) → 201, replay 200, status pago_simulado
+GET    /order/              - Listar meus pedidos (user, ?page&limit com { data, page, limit, total, totalPages, pedidos })
+GET    /order/:id           - Obter pedido (user, 404 se inexistente ou de outro usuário)
+```
+
 Tokens JWT expiram em 1h. Listas aceitam `?page&limit` (padrão 20, máx 100).
+
+> `POST /admin/criar` foi removida (retorna 404). O admin inicial é criado via
+> `BOOTSTRAP_ADMIN_USER`/`BOOTSTRAP_ADMIN_SENHA` pelo `seedAdmin` na inicialização.
 
 ---
 
@@ -371,7 +380,7 @@ ias
 - ✅ Sistema de notificações
 - ✅ Carrinho de compras (back + front em `/cart`)
 - ✅ Paginação nas listagens
-- 🔄 Sistema de pedidos (checkout)
+- ✅ Sistema de pedidos (checkout simulado concluído)
 - 🔄 Busca/filtro de produtos no front
 
 ---

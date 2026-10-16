@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const imagesDir = path.join(__dirname, '../static/images');
 
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // ~2MB
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 2MiB
 
 async function saveBase64Image(base64Input) {
     let base64 = base64Input;
@@ -21,7 +21,7 @@ async function saveBase64Image(base64Input) {
     const buffer = Buffer.from(base64, 'base64');
 
     if (buffer.length > MAX_IMAGE_BYTES) {
-        const err = new Error('Imagem excede o limite de 2MB');
+        const err = new Error('Imagem excede o limite de 2MiB');
         err.status = 400;
         throw err;
     }

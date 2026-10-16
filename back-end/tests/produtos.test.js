@@ -1,12 +1,20 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
-import { setupDb, teardownDb } from './helpers.js';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { setupDb, teardownDb, createTestAdmin } from './helpers.js';
 
 const { default: app } = await import('../app.js');
 
 // PNG 1x1 válido para o middleware de imagem
 const PNG_1X1 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+// Mesmo diretório estático usado pelo middleware do backend
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const imagesDir = path.join(__dirname, '../static/images');
 
 before(setupDb);
 after(teardownDb);
@@ -17,7 +25,7 @@ describe('produtos', () => {
     const criados = [];
 
     it('prepara admin e categoria', async () => {
-        await admin.post('/admin/criar').send({ usuario: 'admin', senha: 'senhaadmin123' });
+        await createTestAdmin('admin', 'senhaadmin123');
         const login = await admin.post('/admin/login').send({ usuario: 'admin', senha: 'senhaadmin123' });
         assert.equal(login.status, 200);
 
@@ -112,9 +120,56 @@ describe('produtos', () => {
         assert.equal(upd.body.produto.nome, 'Notebook');
     });
 
+    it('aceita imagem PNG de ~1.5MiB (payload acima do antigo limite de 1mb)', async () => {
+        const { Buffer } = await import('node:buffer');
+        const IMAGE_BYTES = Math.floor(1.5 * 1024 * 1024);
+        const seed = Buffer.from(PNG_1X1, 'base64');
+        const buf = Buffer.alloc(IMAGE_BYTES);
+        seed.copy(buf);
+        assert.ok(buf.length > 1024 * 1024 && buf.length < 2 * 1024 * 1024);
+        const imagemGrande = buf.toString('base64');
+        const payload = { nome: 'Notebook Grande', descricao: 'Imagem ~1.5MiB', categoriaId, preco: 100, imagem: imagemGrande };
+        // Prova que o JSON ultrapassaria o parser antigo de 1mb
+        assert.ok(Buffer.byteLength(JSON.stringify(payload), 'utf8') > 1024 * 1024);
+        const res = await admin.post('/produto/criar').send(payload);
+        assert.equal(res.status, 201);
+        assert.ok(String(res.body.imagem).includes('/static/images/'));
+        criados.push(res.body);
+    });
+
+    it('rejeita imagem acima de 2MiB com 400 e sem criar produto/arquivo', async () => {
+        const { Buffer } = await import('node:buffer');
+        const IMAGE_BYTES = Math.floor(2.5 * 1024 * 1024);
+        const seed = Buffer.from(PNG_1X1, 'base64');
+        const buf = Buffer.alloc(IMAGE_BYTES);
+        seed.copy(buf);
+        const imagemGrandeDemais = buf.toString('base64');
+        const antes = await request(app).get('/produto/');
+        assert.equal(antes.status, 200);
+        const arquivosAntes = await fs.readdir(imagesDir).catch(() => []);
+        const res = await admin.post('/produto/criar').send({
+            nome: 'Notebook Gigante',
+            descricao: 'Imagem >2MiB',
+            categoriaId,
+            preco: 100,
+            imagem: imagemGrandeDemais,
+        });
+        assert.equal(res.status, 400);
+        assert.match(String(res.body.message || res.body.error || ''), /2MiB/);
+        const depois = await request(app).get('/produto/');
+        assert.equal(depois.body.length, antes.body.length);
+        const arquivosDepois = await fs.readdir(imagesDir).catch(() => []);
+        assert.deepEqual(arquivosDepois.sort(), arquivosAntes.sort());
+    });
+
     it('delete com id inválido retorna 400; válido remove', async () => {
         const bad = await admin.delete('/produto/delete/xyz');
         assert.equal(bad.status, 400);
+
+        const basenames = criados.map((p) => path.basename(String(p.imagem).split('?')[0]));
+        for (const base of basenames) {
+            assert.match(base, /^[0-9a-fA-F-]{36}\.(jpg|jpeg|png|tiff|webp)$/);
+        }
 
         for (const p of criados) {
             const del = await admin.delete(`/produto/delete/${p._id}`);
@@ -122,5 +177,8 @@ describe('produtos', () => {
         }
         const all = await request(app).get('/produto/');
         assert.deepEqual(all.body, []);
+        for (const base of basenames) {
+            await assert.rejects(fs.access(path.join(imagesDir, base)));
+        }
     });
 });

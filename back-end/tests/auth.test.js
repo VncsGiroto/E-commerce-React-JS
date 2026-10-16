@@ -1,7 +1,7 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
-import { setupDb, teardownDb } from './helpers.js';
+import { setupDb, teardownDb, createTestAdmin } from './helpers.js';
 
 const { default: app } = await import('../app.js');
 
@@ -88,16 +88,16 @@ describe('auth: user', () => {
 describe('auth: admin bootstrap', () => {
     const admin = request.agent(app);
 
-    it('cria o primeiro admin sem token (bootstrap)', async () => {
+    it('POST /admin/criar não existe mais (bootstrap só via seed)', async () => {
         const res = await admin.post('/admin/criar').send({
             usuario: 'admin',
             senha: 'senhaadmin123',
         });
-        assert.equal(res.status, 201);
-        assert.ok(!('senha' in res.body));
+        assert.equal(res.status, 404);
     });
 
     it('login admin autentica e lista usuários', async () => {
+        await createTestAdmin('admin', 'senhaadmin123');
         const login = await admin.post('/admin/login').send({
             usuario: 'admin',
             senha: 'senhaadmin123',

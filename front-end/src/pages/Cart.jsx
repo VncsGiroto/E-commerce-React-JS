@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import styled from "styled-components";
 import Navbar from "../components/Navbar";
-import CheckUserToken from "../functions/user/CheckUserToken.js";
 import { GetCart, UpdateCart, RemoveCartItem, DeleteCart } from "../functions/cart/CartApi.js";
+import { CheckoutOrder } from "../functions/order/OrderApi.js";
 
 const Container = styled.div`
     padding: 20px;
@@ -64,28 +64,48 @@ const ErrorMsg = styled.p`
     color: #dc3545;
 `;
 
+const CheckoutButton = styled(SmallButton)`
+    border-color: #28a745;
+    color: #fff;
+    background: #28a745;
+    font-weight: bold;
+`;
+
+const SimNote = styled.p`
+    color: #856404;
+    font-size: 14px;
+`;
+
 function formatBRL(value) {
     const num = Number(value);
     if (Number.isNaN(num)) return value;
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(num);
 }
 
+function generateIdempotencyKey() {
+    if (typeof globalThis !== "undefined" && globalThis.crypto?.randomUUID) {
+        return globalThis.crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+}
+
 export default function Cart() {
     const navigate = useNavigate();
+    const { userId } = useOutletContext() ?? {};
     const [cart, setCart] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [busyId, setBusyId] = useState(null);
+    const idempotencyKeyRef = useRef(null);
+    const isBusy = busyId !== null;
 
     useEffect(() => {
         const load = async () => {
-            const me = await CheckUserToken();
-            const id = me?.data?._id ?? me?.data?.user?._id ?? null;
-            if (me?.status !== 200 || !id) {
-                navigate("/login");
+            if (!userId) {
+                setLoading(false);
                 return;
             }
-            const result = await GetCart(id);
+            const result = await GetCart(userId);
             if (result?.cartId) {
                 setCart(result);
             } else if (result?.status === 404) {
@@ -96,10 +116,10 @@ export default function Cart() {
             setLoading(false);
         };
         load();
-    }, [navigate]);
+    }, [userId]);
 
     const changeQty = async (produtoId, delta) => {
-        if (!cart?.cartId) return;
+        if (!cart?.cartId || isBusy) return;
         const items = (cart.items ?? []).map((item) => ({
             produtoId: String(item.produtoId?._id ?? item.produtoId),
             quantidade: Number(item.quantidade),
@@ -119,7 +139,7 @@ export default function Cart() {
     };
 
     const removeItem = async (produtoId) => {
-        if (!cart?.cartId) return;
+        if (!cart?.cartId || isBusy) return;
         if (!window.confirm("Remover este item do carrinho?")) return;
         setBusyId(`rm-${produtoId}`);
         const result = await RemoveCartItem(cart.cartId, String(produtoId));
@@ -132,7 +152,7 @@ export default function Cart() {
     };
 
     const clearCart = async () => {
-        if (!cart?.cartId) return;
+        if (!cart?.cartId || isBusy) return;
         if (!window.confirm("Esvaziar o carrinho?")) return;
         setBusyId("clear");
         const result = await DeleteCart(cart.cartId);
@@ -144,8 +164,31 @@ export default function Cart() {
         setBusyId(null);
     };
 
+    const checkout = async () => {
+        if (!cart?.cartId || isBusy) return;
+        if (!idempotencyKeyRef.current) {
+            idempotencyKeyRef.current = generateIdempotencyKey();
+        }
+        setBusyId("checkout");
+        setError(null);
+        const result = await CheckoutOrder(idempotencyKeyRef.current);
+        if (result?._id) {
+            idempotencyKeyRef.current = null;
+            setBusyId(null);
+            navigate(`/orders/${result._id}/confirmation`, { state: { fromCheckout: true }, replace: true });
+            return;
+        }
+        if (result?.status === 401 || result?.status === 403) {
+            setBusyId(null);
+            navigate("/login", { replace: true });
+            return;
+        }
+        setError(result?.data?.message ?? "Falha ao finalizar pedido. Tente novamente.");
+        setBusyId(null);
+    };
+
     if (loading) {
-        return (<><Navbar /><Container>Carregando carrinho...</Container></>);
+        return (<><Navbar /><Container aria-live="polite">Carregando carrinho...</Container></>);
     }
 
     return (
@@ -153,7 +196,7 @@ export default function Cart() {
             <Navbar />
             <Container>
                 <Title>Meu Carrinho</Title>
-                {error && <ErrorMsg>{error}</ErrorMsg>}
+                {error && <ErrorMsg role="alert">{error}</ErrorMsg>}
                 {!cart || (cart.items ?? []).length === 0 ? (
                     <p>Seu carrinho está vazio.</p>
                 ) : (
@@ -164,16 +207,18 @@ export default function Cart() {
                                 <Row key={pid}>
                                     <ItemName>{item.nome ?? pid} (x{item.quantidade}) — {formatBRL(item.subtotal ?? item.precoNaCompra * item.quantidade)}</ItemName>
                                     <QtyControls>
-                                        <SmallButton disabled={busyId === pid} onClick={() => changeQty(pid, -1)}>-</SmallButton>
+                                        <SmallButton type="button" aria-label={`Diminuir quantidade de ${item.nome ?? pid}`} disabled={isBusy} onClick={() => changeQty(pid, -1)}>-</SmallButton>
                                         <span>{item.quantidade}</span>
-                                        <SmallButton disabled={busyId === pid} onClick={() => changeQty(pid, 1)}>+</SmallButton>
-                                        <RemoveButton disabled={busyId === `rm-${pid}`} onClick={() => removeItem(pid)}>Remover</RemoveButton>
+                                        <SmallButton type="button" aria-label={`Aumentar quantidade de ${item.nome ?? pid}`} disabled={isBusy} onClick={() => changeQty(pid, 1)}>+</SmallButton>
+                                        <RemoveButton type="button" aria-label={`Remover ${item.nome ?? pid} do carrinho`} disabled={isBusy} onClick={() => removeItem(pid)}>Remover</RemoveButton>
                                     </QtyControls>
                                 </Row>
                             );
                         })}
                         <Total>Total: {formatBRL(cart.valorTotal)}</Total>
-                        <SmallButton disabled={busyId === "clear"} onClick={clearCart}>Esvaziar carrinho</SmallButton>
+                        <SimNote>Pagamento simulado — nenhuma cobrança real será feita.</SimNote>
+                        <CheckoutButton type="button" disabled={isBusy} onClick={checkout}>Finalizar compra</CheckoutButton>
+                        <SmallButton type="button" disabled={isBusy} onClick={clearCart}>Esvaziar carrinho</SmallButton>
                     </>
                 )}
             </Container>

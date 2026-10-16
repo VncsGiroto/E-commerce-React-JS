@@ -14,6 +14,7 @@ import produtosRouter from "./routes/produtosRouter.js";
 import adminRouter from "./routes/adminRouter.js";
 import cartRouter from "./routes/cartRouter.js"
 import categoriaRouter from "./routes/categoriaRouter.js";
+import orderRouter from "./routes/orderRouter.js";
 
 //server
 export function createApp() {
@@ -31,7 +32,8 @@ export function createApp() {
         credentials: true
     }));
     app.use(cookieParser());
-    app.use(express.json({limit: '1mb'}));
+    // Limite 5mb: imagem de até 2MiB vira ~2,8MB em base64 no JSON
+    app.use(express.json({limit: '5mb'}));
 
     // Rate-limit geral contra abuso
     app.use(generalLimiter);
@@ -43,6 +45,7 @@ export function createApp() {
     app.use("/admin/", adminRouter);
     app.use("/cart/", cartRouter);
     app.use("/categoria/", categoriaRouter);
+    app.use("/order/", orderRouter);
 
     // 404 handler
     app.use((req, res) => {

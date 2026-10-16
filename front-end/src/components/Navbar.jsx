@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import { Link } from "react-router-dom";
-import Cookies from "js-cookie";
+import { Link, useNavigate, useOutletContext } from "react-router-dom";
 import CheckUserToken from "../functions/user/CheckUserToken.js";
+import LogoutUser from "../functions/user/LogoutUser.js";
 import logo from "../assets/logo.png";
 
 const Modelo = styled.div`
@@ -54,6 +54,20 @@ const ActionButtons = styled(Link)`
     }
 `
 
+const LogoutButton = styled.button`
+    background: none;
+    border: none;
+    padding: 0;
+    color: #333;
+    font-size: 18px;
+    transition: color 0.3s;
+    cursor: pointer;
+
+    &:hover{
+        color: #000;
+    }
+`
+
 const UserName = styled.span`
     color: #333;
     font-size: 14px;
@@ -61,30 +75,64 @@ const UserName = styled.span`
 `
 
 export default function Navbar() {
-    const [userName, setUserName] = useState(null);
+    const navigate = useNavigate();
+    const { userId: ctxUserId, userName: ctxUserName } = useOutletContext() ?? {};
+    const [userName, setUserName] = useState(ctxUserId ? (ctxUserName ?? null) : null);
+    const [checked, setChecked] = useState(Boolean(ctxUserId));
+    const [loggingOut, setLoggingOut] = useState(false);
+    const [logoutError, setLogoutError] = useState(null);
 
     useEffect(() => {
-        const token = Cookies.get('userToken');
-        if (token) {
-            const validateToken = async () => {
-                const response = await CheckUserToken();
-                if (response?.status === 200) {
-                    setUserName(response?.data?.nome ?? response?.data?.user?.nome ?? null);
-                } else {
-                    setUserName(null);
-                }
-            };
-            validateToken();
+        if (ctxUserId) {
+            setUserName(ctxUserName ?? null);
+            setChecked(true);
+            return;
         }
-    }, []);
+        const resolveSession = async () => {
+            const response = await CheckUserToken();
+            if (response?.status === 200) {
+                setUserName(response?.data?.nome ?? response?.data?.user?.nome ?? null);
+            } else {
+                setUserName(null);
+            }
+            setChecked(true);
+        };
+        resolveSession();
+    }, [ctxUserId, ctxUserName]);
+
+    const handleLogout = async () => {
+        if (loggingOut) return;
+        setLoggingOut(true);
+        setLogoutError(null);
+        const response = await LogoutUser();
+        if (response?.status === 200) {
+            setUserName(null);
+            navigate("/", { replace: true });
+        } else {
+            setLogoutError("Falha ao sair. Tente novamente.");
+        }
+        setLoggingOut(false);
+    };
 
     return (
         <Modelo>
             <Logo src={logo} alt="logo"/>
             <Actions>
-                {userName && <UserName>Olá, {userName}</UserName>}
-                <ActionButtons to="/cart">Carrinho</ActionButtons>
-                <ActionButtons to="/login">Entrar</ActionButtons>
+                {checked && (userName ? (
+                    <>
+                        <UserName>Olá, {userName}</UserName>
+                        <ActionButtons to="/cart">Carrinho</ActionButtons>
+                        <ActionButtons to="/orders">Meus pedidos</ActionButtons>
+                        <LogoutButton type="button" disabled={loggingOut} onClick={handleLogout}>Sair</LogoutButton>
+                    </>
+                ) : (
+                    <>
+                        <ActionButtons to="/cart">Carrinho</ActionButtons>
+                        <ActionButtons to="/login">Entrar</ActionButtons>
+                        <ActionButtons to="/register">Criar conta</ActionButtons>
+                    </>
+                ))}
+                {logoutError && <UserName role="alert">{logoutError}</UserName>}
             </Actions>
         </Modelo>
     );
